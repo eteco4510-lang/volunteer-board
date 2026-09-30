@@ -158,7 +158,6 @@
     .container { max-width: 680px; margin: 0 auto; }
     .loading { text-align: center; padding: 30px; color: var(--text-sub); }
     
-    /* 認証前案内カード */
     .unauth-placeholder {
       background: #ffffff;
       border: 2px dashed #cbd5e1;
@@ -396,7 +395,6 @@
   <div class="container">
     <div id="loading" class="loading" style="display:none;">最新の募集情報を読み込み中...</div>
     <div id="quest-list">
-      <!-- 初期表示：認証前プレースホルダー -->
       <div class="unauth-placeholder" id="unauth-placeholder">
         <span class="lock-icon">🔒</span>
         <h3>ボランティア認証が必要です</h3>
@@ -531,7 +529,7 @@
   <script>
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
     // ★ご自身のGASウェブアプリURL（末尾 /exec）
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
 
     let currentLineUserId = "";
     let currentLineDisplayName = "";
@@ -543,23 +541,40 @@
       handleInitialAuthAndReport();
     });
 
+    /**
+     * ★修正：iOS Safari / LINE内ブラウザの Load failed を完全に防ぐ個別パラメータURL生成
+     */
     async function callGasApi(payload) {
       try {
-        const jsonStr = JSON.stringify(payload);
-        const encodedData = encodeURIComponent(jsonStr);
-        const url = `${GAS_API_URL}?data=${encodedData}`;
+        const queryParams = new URLSearchParams();
+        for (const [key, val] of Object.entries(payload)) {
+          if (val !== undefined && val !== null) {
+            queryParams.append(key, String(val));
+          }
+        }
+
+        const url = `${GAS_API_URL}?${queryParams.toString()}`;
 
         const response = await fetch(url, {
           method: "GET",
-          mode: "cors"
+          headers: {
+            "Accept": "application/json"
+          }
         });
+
+        if (!response.ok) {
+          throw new Error(`HTTPエラー (${response.status})`);
+        }
 
         const result = await response.json();
         if (!result.success) {
-          throw new Error(result.error || "通信エラーが発生しました。");
+          throw new Error(result.error || "処理に失敗しました。");
         }
         return result.data;
       } catch (err) {
+        if (err.message === "Load failed" || err.message === "Failed to fetch") {
+          throw new Error("サーバー通信に失敗しました。GASの公開権限が「全員」になっているかご確認ください。");
+        }
         throw err;
       }
     }
@@ -771,9 +786,6 @@
       }
     }
 
-    /**
-     * ★認証ログイン処理：成功時に初めて案件一覧を取得・表示
-     */
     async function submitLogin(isSilent) {
       if (document.activeElement) document.activeElement.blur();
 
@@ -815,7 +827,6 @@
           );
         }
 
-        // ★認証成功後に案件一覧を取得・表示
         fetchQuests();
 
       } catch (err) {
@@ -830,9 +841,6 @@
       }
     }
 
-    /**
-     * ★ログアウト処理：認証案内プレースホルダーに戻す
-     */
     function logoutVolunteer() {
       localStorage.removeItem("saved_vol_no");
       localStorage.removeItem("saved_vol_phone4");
@@ -840,7 +848,6 @@
       document.getElementById("auth-logged-in-view").style.display = "none";
       document.getElementById("auth-login-view").style.display = "flex";
 
-      // 依頼一覧をクリアして認証要求画面に戻す
       const container = document.getElementById("quest-list");
       container.innerHTML = `
         <div class="unauth-placeholder" id="unauth-placeholder">
@@ -1017,6 +1024,8 @@
             if (typeof liff !== "undefined" && liff.isInClient()) {
               liff.closeWindow();
             } else {
+              document.getElementById("loading").style.display = "block";
+              document.getElementById("quest-list").innerHTML = "";
               fetchQuests();
             }
           }
