@@ -512,15 +512,20 @@
       handleInitialAuthAndReport();
     });
 
+    /**
+     * ★修正：iOS/Safari/LINEブラウザで Load failed を防ぐ安全な GET 通信ラッパー
+     */
     async function callGasApi(payload) {
       try {
-        const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify(payload)
+        const jsonStr = JSON.stringify(payload);
+        const encodedData = encodeURIComponent(jsonStr);
+        const url = `${GAS_API_URL}?data=${encodedData}`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          mode: "cors"
         });
+
         const result = await response.json();
         if (!result.success) {
           throw new Error(result.error || "通信エラーが発生しました。");
@@ -531,9 +536,6 @@
       }
     }
 
-    /**
-     * ★改修：URLパラメータからの自動認証＆報告モーダル自動起動
-     */
     async function handleInitialAuthAndReport() {
       const urlParams = new URLSearchParams(window.location.search);
       let hashParams = new URLSearchParams();
@@ -546,17 +548,14 @@
       const urlVolNo = urlParams.get("vol") || hashParams.get("vol");
       const urlPhone4 = urlParams.get("p") || hashParams.get("p");
 
-      // ① URLに認証情報が付いている場合は最優先で自動ログイン
       if (urlVolNo && urlPhone4) {
         document.getElementById("login-vol-no").value = urlVolNo;
         document.getElementById("login-vol-phone4").value = urlPhone4;
-        await submitLogin(true); // サイレントログイン実行
+        await submitLogin(true);
       } else {
-        // 通常アクセス時は保存された認証情報を復元
         restoreSavedAuth();
       }
 
-      // ② レポートIDが指定されている場合は報告アンケートを直結起動
       if (reportReqId) {
         const cleanDigits = reportReqId.replace(/[^0-9]/g, "");
         const formattedId = cleanDigits ? "V-" + cleanDigits.padStart(3, "0") : reportReqId;
@@ -864,15 +863,10 @@
 
     async function fetchQuests() {
       try {
-        const response = await fetch(`${GAS_API_URL}?action=getOpenQuests`);
-        const result = await response.json();
-        if (result.success) {
-          renderQuests(result.quests);
-        } else {
-          document.getElementById("loading").innerText = "読み込みエラー: " + result.error;
-        }
+        const res = await callGasApi({ action: "getOpenQuests" });
+        renderQuests(res);
       } catch (err) {
-        document.getElementById("loading").innerText = "通信エラー: " + err.message;
+        document.getElementById("loading").innerText = "読み込みエラー: " + err.message;
       }
     }
 
