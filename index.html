@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>地域ボランティア募集 掲示板</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --primary: #06c755;
+      --primary-hover: #05b04b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-sub: #64748b;
+      --badge-bg: #e0f2fe;
+      --badge-text: #0369a1;
+      --line-badge-bg: #dcfce7;
+      --line-badge-text: #166534;
+      --warning-bg: #fef3c7;
+      --warning-text: #92400e;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 12px;
+      line-height: 1.5;
+    }
+    header {
+      max-width: 680px;
+      margin: 0 auto 14px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.3rem; color: var(--text-main); margin-bottom: 4px; }
+    header p { font-size: 0.82rem; color: var(--text-sub); }
+
+    .auth-panel {
+      max-width: 680px;
+      margin: 0 auto 16px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .auth-logged-in {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--line-badge-bg);
+      color: var(--line-badge-text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.88rem;
+    }
+    .auth-logged-in-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-report-manual {
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-reset-auth {
+      background: transparent;
+      border: 1px solid var(--line-badge-text);
+      color: var(--line-badge-text);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .auth-login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .auth-inputs-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .auth-input-no {
+      width: 95px;
+      flex-shrink: 0;
+      padding: 10px 6px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 1.5px;
+      font-weight: bold;
+      background: #fafafa;
+    }
+    .auth-input-phone {
+      width: 120px;
+      flex-shrink: 0;
+      padding: 10px 6px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 1.5px;
+      font-weight: bold;
+      background: #fafafa;
+    }
+
+    .auth-buttons-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    .btn-login-large {
+      flex: 1.6;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 11px 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(6, 199, 85, 0.2);
+    }
+    .btn-login-large:active { background: var(--primary-hover); }
+    .btn-to-reg-large {
+      flex: 1;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      padding: 11px 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-to-reg-large:active { background: #e2e8f0; }
+
+    .container { max-width: 680px; margin: 0 auto; }
+    .loading { text-align: center; padding: 30px; color: var(--text-sub); }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .card-title { font-size: 1.05rem; font-weight: bold; flex: 1; }
+    .badge {
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.78rem;
+      font-weight: bold;
+      padding: 3px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .card-row { margin-bottom: 5px; font-size: 0.88rem; }
+    .card-row strong { color: var(--text-sub); display: inline-block; width: 65px; }
+
+    .briefing-link-box {
+      margin-top: 8px;
+      margin-bottom: 4px;
+      background: #f0fdf4;
+      border: 1px dashed #86efac;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+    }
+    .briefing-link-box a {
+      color: #15803d;
+      font-weight: bold;
+      text-decoration: underline;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .apply-btn {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 440px;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal h2 { font-size: 1.15rem; margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.84rem; font-weight: bold; margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    .quest-input-box {
+      display: flex;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .quest-prefix {
+      background: #f1f5f9;
+      padding: 10px 12px;
+      font-weight: bold;
+      color: #475569;
+      font-size: 1rem;
+      border-right: 1px solid #cbd5e1;
+    }
+    .quest-num-input {
+      flex: 1;
+      border: none !important;
+      padding: 10px !important;
+      font-size: 1.1rem !important;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .notice-box {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-submit {
+      flex: 1;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 11px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-cancel {
+      flex: 1;
+      background: #e2e8f0;
+      color: var(--text-main);
+      border: none;
+      padding: 11px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #custom-alert-modal { z-index: 1000; }
+    .custom-alert-box { text-align: center; padding: 24px 18px 20px; }
+    .alert-icon { font-size: 2.8rem; margin-bottom: 10px; display: block; }
+    .alert-title { font-size: 1.25rem; font-weight: bold; color: #0f172a; margin-bottom: 12px; }
+    .alert-body {
+      font-size: 1rem;
+      color: #334155;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8fafc;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .alert-btn {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 13px;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(6, 199, 85, 0.25);
+    }
+    .alert-btn:active { background: var(--primary-hover); }
+  </style>
+</head>
+<body onclick="dismissKeyboard(event)">
+
+  <header>
+    <h1>地域ボランティア募集 掲示板</h1>
+    <p>手助けを必要としている地域の依頼一覧です</p>
+  </header>
+
+  <div class="auth-panel" id="auth-panel">
+    <div id="auth-logged-in-view" class="auth-logged-in" style="display:none;">
+      <div>
+        <span id="auth-vol-display"></span>
+      </div>
+      <div class="auth-logged-in-actions">
+        <button type="button" class="btn-report-manual" onclick="openQuestNumberSelectModal()">📋 完了報告</button>
+        <button type="button" class="btn-reset-auth" onclick="logoutVolunteer()">再設定</button>
+      </div>
+    </div>
+
+    <div id="auth-login-view" class="auth-login-form">
+      <div style="font-size:0.82rem; color:#475569; font-weight:bold;">
+        ボランティア認証（登録番号・電話番号下4桁）
+      </div>
+      <div class="auth-inputs-row">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-no" class="auth-input-no" placeholder="番号(001)" maxlength="4">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-phone4" class="auth-input-phone" placeholder="電話下4桁" maxlength="4">
+      </div>
+      <div class="auth-buttons-row">
+        <button type="button" class="btn-login-large" id="btn-login-submit" onclick="submitLogin()">認証・ログイン</button>
+        <button type="button" class="btn-to-reg-large" onclick="openRegisterModal()">新規登録</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="loading" class="loading">最新の募集情報を読み込み中...</div>
+    <div id="quest-list"></div>
+  </div>
+
+  <!-- 新規登録モーダル -->
+  <div id="register-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>新規ボランティア利用登録</h2>
+      <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">
+        登録すると専用の「3桁の登録番号」が自動発行されます。
+      </p>
+      <div class="form-group">
+        <label for="reg-name">お名前（本名・必須）</label>
+        <input type="text" id="reg-name" placeholder="例：地域 太郎" required>
+      </div>
+      <div class="form-group">
+        <label for="reg-phone">お電話番号（必須）</label>
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="reg-phone" placeholder="例：09012345678" required>
+      </div>
+      <div class="notice-box">
+        ※次回からのログインは「登録番号」と「お電話番号の下4桁」で行えます。
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeRegisterModal()">戻る</button>
+        <button type="button" class="btn-submit" id="btn-submit-reg" onclick="submitRegistration()">登録して番号を発行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 立候補確認モーダル -->
+  <div id="apply-modal" class="modal-overlay">
+    <div class="modal">
+      <h2 id="modal-task-title">ボランティアに立候補する</h2>
+      <input type="hidden" id="modal-quest-id">
+
+      <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.88rem;">
+        <div><strong>登録番号：</strong><span id="apply-vol-no"></span></div>
+        <div><strong>お名前：</strong><span id="apply-vol-name"></span> 様</div>
+      </div>
+
+      <div class="notice-box">
+        ※確定すると受付が完了し、公式LINEのトーク画面へ<strong>「依頼者のお名前・電話番号・集合場所・事前資料」</strong>が自動送信されます。
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeApplyModal()">キャンセル</button>
+        <button type="button" class="btn-submit" id="btn-submit-apply" onclick="submitApplication()">立候補を確定する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- クエスト番号入力モーダル -->
+  <div id="quest-number-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>📋 完了報告する案件番号</h2>
+      <p style="font-size:0.82rem; color:#64748b; margin-bottom:12px;">
+        報告を行う募集番号の「数字」を入力してください。
+      </p>
+
+      <div class="form-group">
+        <label>クエスト番号</label>
+        <div class="quest-input-box">
+          <span class="quest-prefix">V-</span>
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" id="manual-quest-num" class="quest-num-input" placeholder="001" maxlength="4">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeQuestNumberModal()">キャンセル</button>
+        <button type="button" class="btn-submit" onclick="proceedToReportModal()">次へ（アンケート開く）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 活動完了報告アンケートモーダル -->
+  <div id="report-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>🍀 活動完了報告アンケート</h2>
+      <p style="font-size:0.82rem; color:#64748b; margin-bottom:12px;">
+        本日の活動お疲れ様でした！1分程度で状況をお知らせください。
+      </p>
+
+      <div class="form-group">
+        <label>対象案件</label>
+        <input type="text" id="report-quest-id" readonly style="background:#f1f5f9; font-weight:bold; font-size:1.05rem;">
+      </div>
+
+      <div class="form-group">
+        <label>Q1. 活動の実施状況（必須）</label>
+        <select id="report-status">
+          <option value="無事完了">🟢 無事に完了した</option>
+          <option value="一部課題あり">🟡 一部課題・やり残しあり</option>
+          <option value="未実施・中止">🔴 実施できなかった・中止</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Q2. 現場や依頼者様の雰囲気（必須）</label>
+        <select id="report-mood">
+          <option value="とても良かった">とても良かった（大変喜ばれた）</option>
+          <option value="普通">普通（問題なく活動できた）</option>
+          <option value="少し困ったことがあった">少し困ったことがあった</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Q3. 事務局への連絡事項・特記事項（任意）</label>
+        <textarea id="report-notes" rows="2" placeholder="気になる点があればご記入ください"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeReportModal()">閉じる</button>
+        <button type="button" class="btn-submit" id="btn-submit-report" onclick="submitReportAction()">報告を送信する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- カスタム通知モーダル -->
+  <div id="custom-alert-modal" class="modal-overlay">
+    <div class="modal custom-alert-box">
+      <span class="alert-icon" id="custom-alert-icon">✨</span>
+      <div class="alert-title" id="custom-alert-title">お知らせ</div>
+      <div class="alert-body" id="custom-alert-body"></div>
+      <button type="button" class="alert-btn" id="custom-alert-btn" onclick="closeCustomAlert()">とじる</button>
+    </div>
+  </div>
+
+  <script>
+    // ★重要設定項目
+    const MY_LIFF_ID = "2011743949-Sg6zYmMI";
+    // ★GASのウェブアプリURL（末尾 /exec）を貼り付けてください
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+
+    let currentLineUserId = "";
+    let currentLineDisplayName = "";
+    let currentVolunteer = null;
+    let customAlertCallback = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+      fetchQuests();
+      initLiffSafely();
+      restoreSavedAuth();
+      checkUrlReportParam();
+    });
+
+    /**
+     * GAS Web API との非同期通信ラッパー（fetch）
+     */
+    async function callGasApi(payload) {
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || "通信エラーが発生しました。");
+        }
+        return result.data;
+      } catch (err) {
+        throw err;
+      }
+    }
+
+    function showCustomAlert(title, message, iconType = "success", callback = null) {
+      if (document.activeElement) document.activeElement.blur();
+      
+      const modal = document.getElementById("custom-alert-modal");
+      const titleEl = document.getElementById("custom-alert-title");
+      const bodyEl = document.getElementById("custom-alert-body");
+      const iconEl = document.getElementById("custom-alert-icon");
+
+      titleEl.innerText = title;
+      bodyEl.innerText = message;
+      customAlertCallback = callback;
+
+      if (iconType === "success") {
+        iconEl.innerText = "✅";
+      } else if (iconType === "error") {
+        iconEl.innerText = "⚠️️";
+      } else {
+        iconEl.innerText = "📢";
+      }
+
+      modal.style.display = "flex";
+    }
+
+    function closeCustomAlert() {
+      document.getElementById("custom-alert-modal").style.display = "none";
+      if (typeof customAlertCallback === "function") {
+        const cb = customAlertCallback;
+        customAlertCallback = null;
+        cb();
+      }
+    }
+
+    function dismissKeyboard(e) {
+      if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "SELECT") {
+        if (document.activeElement && typeof document.activeElement.blur === "function") {
+          document.activeElement.blur();
+        }
+      }
+    }
+
+    function initLiffSafely() {
+      if (typeof liff === "undefined" || !MY_LIFF_ID || MY_LIFF_ID.trim() === "") return;
+
+      liff.init({ liffId: MY_LIFF_ID })
+        .then(() => {
+          try {
+            const idToken = liff.getDecodedIDToken();
+            if (idToken && idToken.sub && idToken.sub.startsWith("U")) {
+              currentLineUserId = idToken.sub;
+            }
+          } catch(e) {}
+
+          if (liff.isLoggedIn()) {
+            liff.getProfile().then(profile => {
+              if (profile.userId && profile.userId.startsWith("U")) {
+                currentLineUserId = profile.userId;
+              }
+              currentLineDisplayName = profile.displayName || "";
+            }).catch(() => {});
+          }
+        })
+        .catch(err => {
+          console.error("LIFF Init Error: ", err);
+        });
+    }
+
+    function checkUrlReportParam() {
+      let reportReqId = "";
+
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has("report")) {
+        reportReqId = urlParams.get("report");
+      }
+
+      if (!reportReqId && window.location.hash) {
+        const hashStr = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hashStr.includes("?") ? hashStr.split("?")[1] : hashStr);
+        if (hashParams.has("report")) {
+          reportReqId = hashParams.get("report");
+        }
+      }
+
+      if (!reportReqId) {
+        try {
+          const match = window.location.href.match(/report=([A-Za-z0-9\-]+)/);
+          if (match && match[1]) {
+            reportReqId = match[1];
+          }
+        } catch(e) {}
+      }
+
+      if (reportReqId) {
+        const cleanDigits = reportReqId.replace(/[^0-9]/g, "");
+        const formattedId = cleanDigits ? "V-" + cleanDigits.padStart(3, "0") : reportReqId;
+        
+        document.getElementById("report-quest-id").value = formattedId;
+        setTimeout(() => {
+          if (document.activeElement) document.activeElement.blur();
+          document.getElementById("report-modal").style.display = "flex";
+        }, 500);
+      }
+    }
+
+    function openQuestNumberSelectModal() {
+      if (!currentVolunteer) {
+        showCustomAlert("認証が必要です", "報告を行う前に、画面上部で登録番号とお電話番号の下4桁を入力してログインしてください。", "error", () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        return;
+      }
+      const modal = document.getElementById("quest-number-modal");
+      const input = document.getElementById("manual-quest-num");
+      input.value = "";
+      modal.style.display = "flex";
+
+      setTimeout(() => {
+        input.focus();
+      }, 200);
+    }
+
+    function closeQuestNumberModal() {
+      if (document.activeElement) document.activeElement.blur();
+      document.getElementById("quest-number-modal").style.display = "none";
+    }
+
+    function proceedToReportModal() {
+      const inputVal = document.getElementById("manual-quest-num").value.trim();
+      const digits = inputVal.replace(/[^0-9]/g, "");
+
+      if (!digits) {
+        showCustomAlert("入力エラー", "番号の数字（例: 001 や 1）を入力してください。", "error");
+        return;
+      }
+
+      if (document.activeElement) document.activeElement.blur();
+      
+      const fullReqId = "V-" + digits.padStart(3, "0");
+      document.getElementById("report-quest-id").value = fullReqId;
+      closeQuestNumberModal();
+
+      setTimeout(() => {
+        document.getElementById("report-modal").style.display = "flex";
+      }, 200);
+    }
+
+    function closeReportModal() {
+      if (document.activeElement) document.activeElement.blur();
+      document.getElementById("report-modal").style.display = "none";
+    }
+
+    async function submitReportAction() {
+      if (!currentVolunteer) {
+        showCustomAlert("認証エラー", "認証が確認できません。再度ログインしてください。", "error");
+        closeReportModal();
+        return;
+      }
+
+      if (document.activeElement) document.activeElement.blur();
+
+      const reqId = document.getElementById("report-quest-id").value;
+      const status = document.getElementById("report-status").value;
+      const mood = document.getElementById("report-mood").value;
+      const notes = document.getElementById("report-notes").value.trim();
+
+      const btn = document.getElementById("btn-submit-report");
+      btn.innerText = "送信中...";
+      btn.disabled = true;
+
+      try {
+        await callGasApi({
+          action: "submitReport",
+          reqId: reqId,
+          volunteerNo: currentVolunteer.volunteerNo,
+          status: status,
+          mood: mood,
+          notes: notes
+        });
+
+        closeReportModal();
+        btn.innerText = "報告を送信する";
+        btn.disabled = false;
+
+        showCustomAlert(
+          "報告完了！", 
+          "完了報告アンケートを受付ました。\n活動への温かいご協力、誠にありがとうございました！🍀", 
+          "success", 
+          () => {
+            if (typeof liff !== "undefined" && liff.isInClient()) {
+              liff.closeWindow();
+            } else {
+              fetchQuests();
+            }
+          }
+        );
+      } catch (err) {
+        btn.innerText = "報告を送信する";
+        btn.disabled = false;
+        showCustomAlert("報告エラー", err.message, "error");
+      }
+    }
+
+    function restoreSavedAuth() {
+      const savedNo = localStorage.getItem("saved_vol_no");
+      const savedPhone4 = localStorage.getItem("saved_vol_phone4");
+
+      if (savedNo && savedPhone4) {
+        document.getElementById("login-vol-no").value = savedNo;
+        document.getElementById("login-vol-phone4").value = savedPhone4;
+        submitLogin(true);
+      }
+    }
+
+    async function submitLogin(isSilent) {
+      if (document.activeElement) document.activeElement.blur();
+
+      const no = document.getElementById("login-vol-no").value.trim();
+      const phone4 = document.getElementById("login-vol-phone4").value.trim();
+
+      if (!no || !phone4) {
+        if (!isSilent) showCustomAlert("入力不足", "登録番号とお電話番号の下4桁を入力してください。", "error");
+        return;
+      }
+
+      const btn = document.getElementById("btn-login-submit");
+      if (!isSilent) {
+        btn.innerText = "...";
+        btn.disabled = true;
+      }
+
+      try {
+        const res = await callGasApi({
+          action: "login",
+          volunteerNo: no,
+          phoneLast4: phone4,
+          lineUserId: currentLineUserId || ""
+        });
+
+        currentVolunteer = res;
+        localStorage.setItem("saved_vol_no", res.volunteerNo);
+        localStorage.setItem("saved_vol_phone4", res.phoneLast4);
+
+        document.getElementById("auth-login-view").style.display = "none";
+        document.getElementById("auth-logged-in-view").style.display = "flex";
+        document.getElementById("auth-vol-display").innerText = `認証完了: [${res.volunteerNo}] ${res.name} 様`;
+
+        if (!isSilent) {
+          showCustomAlert(
+            "認証完了",
+            `ボランティア番号：【 ${res.volunteerNo} 】\n${res.name} 様としてログインしました。\n\nこれで立候補や活動報告が可能です。`,
+            "success"
+          );
+        }
+      } catch (err) {
+        if (!isSilent) showCustomAlert("認証エラー", err.message, "error");
+        if (isSilent) {
+          localStorage.removeItem("saved_vol_no");
+          localStorage.removeItem("saved_vol_phone4");
+        }
+      } finally {
+        btn.innerText = "認証・ログイン";
+        btn.disabled = false;
+      }
+    }
+
+    function logoutVolunteer() {
+      localStorage.removeItem("saved_vol_no");
+      localStorage.removeItem("saved_vol_phone4");
+      currentVolunteer = null;
+      document.getElementById("auth-logged-in-view").style.display = "none";
+      document.getElementById("auth-login-view").style.display = "flex";
+    }
+
+    function openRegisterModal() {
+      const regName = document.getElementById("reg-name");
+      if (regName && currentLineDisplayName && !regName.value) {
+        regName.value = currentLineDisplayName;
+      }
+      document.getElementById("register-modal").style.display = "flex";
+    }
+
+    function closeRegisterModal() {
+      if (document.activeElement) document.activeElement.blur();
+      document.getElementById("register-modal").style.display = "none";
+    }
+
+    async function submitRegistration() {
+      if (document.activeElement) document.activeElement.blur();
+
+      const name = document.getElementById("reg-name").value.trim();
+      const phone = document.getElementById("reg-phone").value.trim();
+
+      if (!name || !phone) {
+        showCustomAlert("入力エラー", "お名前とお電話番号を両方入力してください。", "error");
+        return;
+      }
+
+      const btn = document.getElementById("btn-submit-reg");
+      btn.innerText = "登録中...";
+      btn.disabled = true;
+
+      try {
+        const res = await callGasApi({
+          action: "register",
+          lineUserId: currentLineUserId || "未取得",
+          lineDisplayName: currentLineDisplayName || name,
+          name: name,
+          phone: phone
+        });
+
+        const phoneLast4 = res.phoneLast4;
+        document.getElementById("login-vol-no").value = res.volunteerNo;
+        document.getElementById("login-vol-phone4").value = phoneLast4;
+        closeRegisterModal();
+
+        showCustomAlert(
+          "登録完了！",
+          `あなた専用のボランティア登録番号は\n【 ${res.volunteerNo} 】です。\n\n━━━━━━━━━━━━━━\n【最重要：LINE通知の有効化】\n公式LINEのトーク画面で、以下のように送信してください：\n\n『 ${res.volunteerNo} ${phoneLast4} 』\n\n（登録番号と電話下4桁をスペースで区切って送信）\n━━━━━━━━━━━━━━`,
+          "success",
+          () => {
+            submitLogin(true);
+          }
+        );
+      } catch (err) {
+        showCustomAlert("登録エラー", err.message, "error");
+      } finally {
+        btn.innerText = "登録して番号を発行";
+        btn.disabled = false;
+      }
+    }
+
+    async function fetchQuests() {
+      try {
+        const response = await fetch(`${GAS_API_URL}?action=getOpenQuests`);
+        const result = await response.json();
+        if (result.success) {
+          renderQuests(result.quests);
+        } else {
+          document.getElementById("loading").innerText = "読み込みエラー: " + result.error;
+        }
+      } catch (err) {
+        document.getElementById("loading").innerText = "通信エラー: " + err.message;
+      }
+    }
+
+    function renderQuests(quests) {
+      document.getElementById("loading").style.display = "none";
+      const container = document.getElementById("quest-list");
+      container.innerHTML = "";
+
+      if (!quests || quests.length === 0) {
+        container.innerHTML = '<div class="card" style="text-align:center; color:#64748b;">現在募集中のボランティア依頼はありません。</div>';
+        return;
+      }
+
+      quests.forEach(q => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        let briefingHtml = "";
+        if (q.briefingUrl) {
+          briefingHtml = `
+            <div class="briefing-link-box">
+              <a href="${q.briefingUrl}" target="_blank" rel="noopener noreferrer">
+                📄 事前ブリーフィング資料・写真を確認 ↗
+              </a>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="card-title">${q.task}</div>
+            <div class="badge">あと ${q.remaining}名（定員${q.capacity}名）</div>
+          </div>
+          <div class="card-row"><strong>日時</strong>${q.date} ${q.time}〜</div>
+          <div class="card-row"><strong>場所</strong>${q.location}</div>
+          <div class="card-row"><strong>備考</strong>${q.notes || "特になし"}</div>
+          ${briefingHtml}
+          <button class="apply-btn" onclick="handleApplyClick('${q.id}', '${q.task}')">立候補する</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function handleApplyClick(id, title) {
+      if (document.activeElement) document.activeElement.blur();
+
+      if (!currentVolunteer) {
+        showCustomAlert("認証が必要です", "立候補する前に、画面上部で登録番号とお電話番号下4桁を入力してログインしてください。", "error", () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        return;
+      }
+
+      document.getElementById("modal-quest-id").value = id;
+      document.getElementById("modal-task-title").innerText = `「${title}」に立候補`;
+      document.getElementById("apply-vol-no").innerText = currentVolunteer.volunteerNo;
+      document.getElementById("apply-vol-name").innerText = currentVolunteer.name;
+
+      document.getElementById("apply-modal").style.display = "flex";
+    }
+
+    function closeApplyModal() {
+      if (document.activeElement) document.activeElement.blur();
+      document.getElementById("apply-modal").style.display = "none";
+    }
+
+    async function submitApplication() {
+      if (document.activeElement) document.activeElement.blur();
+
+      const id = document.getElementById("modal-quest-id").value;
+      const submitBtn = document.getElementById("btn-submit-apply");
+      submitBtn.innerText = "送信中...";
+      submitBtn.disabled = true;
+
+      const applicantName = `[${currentVolunteer.volunteerNo}] ${currentVolunteer.name}`;
+
+      try {
+        await callGasApi({
+          action: "apply",
+          reqId: id,
+          volunteerNo: currentVolunteer.volunteerNo,
+          applicantName: applicantName,
+          applicantContact: currentVolunteer.phone || ""
+        });
+
+        closeApplyModal();
+
+        showCustomAlert(
+          "立候補完了！",
+          "ボランティアの立候補を受け付けました。\n公式LINEのトーク画面へ詳細情報をお送りしましたのでご確認ください！",
+          "success",
+          () => {
+            if (typeof liff !== "undefined" && liff.isInClient()) {
+              liff.closeWindow();
+            } else {
+              document.getElementById("loading").style.display = "block";
+              document.getElementById("quest-list").innerHTML = "";
+              fetchQuests();
+            }
+          }
+        );
+      } catch (err) {
+        showCustomAlert("受付エラー", err.message, "error");
+      } finally {
+        submitBtn.innerText = "立候補を確定する";
+        submitBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
