@@ -158,6 +158,31 @@
     .container { max-width: 680px; margin: 0 auto; }
     .loading { text-align: center; padding: 30px; color: var(--text-sub); }
     
+    /* 認証前案内カード */
+    .unauth-placeholder {
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 30px 20px;
+      text-align: center;
+      color: #64748b;
+      margin-top: 10px;
+    }
+    .unauth-placeholder .lock-icon {
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .unauth-placeholder h3 {
+      font-size: 1.05rem;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .unauth-placeholder p {
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
     .card {
       background: var(--card-bg);
       border-radius: 12px;
@@ -369,8 +394,15 @@
   </div>
 
   <div class="container">
-    <div id="loading" class="loading">最新の募集情報を読み込み中...</div>
-    <div id="quest-list"></div>
+    <div id="loading" class="loading" style="display:none;">最新の募集情報を読み込み中...</div>
+    <div id="quest-list">
+      <!-- 初期表示：認証前プレースホルダー -->
+      <div class="unauth-placeholder" id="unauth-placeholder">
+        <span class="lock-icon">🔒</span>
+        <h3>ボランティア認証が必要です</h3>
+        <p>上の枠に「登録番号」と「電話番号下4桁」を入力して<br>「認証・ログイン」を行うと、募集中の依頼一覧が表示されます。</p>
+      </div>
+    </div>
   </div>
 
   <!-- 新規登録モーダル -->
@@ -498,8 +530,8 @@
 
   <script>
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
-    // ★GASのウェブアプリURL（末尾 /exec）
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    // ★ご自身のGASウェブアプリURL（末尾 /exec）
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
 
     let currentLineUserId = "";
     let currentLineDisplayName = "";
@@ -507,14 +539,10 @@
     let customAlertCallback = null;
 
     document.addEventListener("DOMContentLoaded", function() {
-      fetchQuests();
       initLiffSafely();
       handleInitialAuthAndReport();
     });
 
-    /**
-     * ★修正：iOS/Safari/LINEブラウザで Load failed を防ぐ安全な GET 通信ラッパー
-     */
     async function callGasApi(payload) {
       try {
         const jsonStr = JSON.stringify(payload);
@@ -743,6 +771,9 @@
       }
     }
 
+    /**
+     * ★認証ログイン処理：成功時に初めて案件一覧を取得・表示
+     */
     async function submitLogin(isSilent) {
       if (document.activeElement) document.activeElement.blur();
 
@@ -779,10 +810,14 @@
         if (!isSilent) {
           showCustomAlert(
             "認証完了",
-            `ボランティア番号：【 ${res.volunteerNo} 】\n${res.name} 様としてログインしました。\n\nこれで立候補や活動報告が可能です。`,
+            `ボランティア番号：【 ${res.volunteerNo} 】\n${res.name} 様としてログインしました。\n\n募集中の依頼一覧を表示します。`,
             "success"
           );
         }
+
+        // ★認証成功後に案件一覧を取得・表示
+        fetchQuests();
+
       } catch (err) {
         if (!isSilent) showCustomAlert("認証エラー", err.message, "error");
         if (isSilent) {
@@ -795,12 +830,25 @@
       }
     }
 
+    /**
+     * ★ログアウト処理：認証案内プレースホルダーに戻す
+     */
     function logoutVolunteer() {
       localStorage.removeItem("saved_vol_no");
       localStorage.removeItem("saved_vol_phone4");
       currentVolunteer = null;
       document.getElementById("auth-logged-in-view").style.display = "none";
       document.getElementById("auth-login-view").style.display = "flex";
+
+      // 依頼一覧をクリアして認証要求画面に戻す
+      const container = document.getElementById("quest-list");
+      container.innerHTML = `
+        <div class="unauth-placeholder" id="unauth-placeholder">
+          <span class="lock-icon">🔒</span>
+          <h3>ボランティア認証が必要です</h3>
+          <p>上の枠に「登録番号」と「電話番号下4桁」を入力して<br>「認証・ログイン」を行うと、募集中の依頼一覧が表示されます。</p>
+        </div>
+      `;
     }
 
     function openRegisterModal() {
@@ -862,11 +910,18 @@
     }
 
     async function fetchQuests() {
+      const loadingEl = document.getElementById("loading");
+      const container = document.getElementById("quest-list");
+      
+      loadingEl.style.display = "block";
+      container.innerHTML = "";
+
       try {
         const res = await callGasApi({ action: "getOpenQuests" });
         renderQuests(res);
       } catch (err) {
-        document.getElementById("loading").innerText = "読み込みエラー: " + err.message;
+        loadingEl.style.display = "none";
+        container.innerHTML = `<div class="card" style="text-align:center; color:#ef4444;">読み込みエラー: ${err.message}</div>`;
       }
     }
 
@@ -962,8 +1017,6 @@
             if (typeof liff !== "undefined" && liff.isInClient()) {
               liff.closeWindow();
             } else {
-              document.getElementById("loading").style.display = "block";
-              document.getElementById("quest-list").innerHTML = "";
               fetchQuests();
             }
           }
