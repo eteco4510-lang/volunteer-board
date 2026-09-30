@@ -497,10 +497,9 @@
   </div>
 
   <script>
-    // ★重要設定項目
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
-    // ★GASのウェブアプリURL（末尾 /exec）を貼り付けてください
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    // ★GASのウェブアプリURL（末尾 /exec）
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
 
     let currentLineUserId = "";
     let currentLineDisplayName = "";
@@ -510,13 +509,9 @@
     document.addEventListener("DOMContentLoaded", function() {
       fetchQuests();
       initLiffSafely();
-      restoreSavedAuth();
-      checkUrlReportParam();
+      handleInitialAuthAndReport();
     });
 
-    /**
-     * GAS Web API との非同期通信ラッパー（fetch）
-     */
     async function callGasApi(payload) {
       try {
         const response = await fetch(GAS_API_URL, {
@@ -536,6 +531,44 @@
       }
     }
 
+    /**
+     * ★改修：URLパラメータからの自動認証＆報告モーダル自動起動
+     */
+    async function handleInitialAuthAndReport() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let hashParams = new URLSearchParams();
+      if (window.location.hash) {
+        const hashStr = window.location.hash.substring(1);
+        hashParams = new URLSearchParams(hashStr.includes("?") ? hashStr.split("?")[1] : hashStr);
+      }
+
+      const reportReqId = urlParams.get("report") || hashParams.get("report");
+      const urlVolNo = urlParams.get("vol") || hashParams.get("vol");
+      const urlPhone4 = urlParams.get("p") || hashParams.get("p");
+
+      // ① URLに認証情報が付いている場合は最優先で自動ログイン
+      if (urlVolNo && urlPhone4) {
+        document.getElementById("login-vol-no").value = urlVolNo;
+        document.getElementById("login-vol-phone4").value = urlPhone4;
+        await submitLogin(true); // サイレントログイン実行
+      } else {
+        // 通常アクセス時は保存された認証情報を復元
+        restoreSavedAuth();
+      }
+
+      // ② レポートIDが指定されている場合は報告アンケートを直結起動
+      if (reportReqId) {
+        const cleanDigits = reportReqId.replace(/[^0-9]/g, "");
+        const formattedId = cleanDigits ? "V-" + cleanDigits.padStart(3, "0") : reportReqId;
+        
+        document.getElementById("report-quest-id").value = formattedId;
+        setTimeout(() => {
+          if (document.activeElement) document.activeElement.blur();
+          document.getElementById("report-modal").style.display = "flex";
+        }, 400);
+      }
+    }
+
     function showCustomAlert(title, message, iconType = "success", callback = null) {
       if (document.activeElement) document.activeElement.blur();
       
@@ -551,7 +584,7 @@
       if (iconType === "success") {
         iconEl.innerText = "✅";
       } else if (iconType === "error") {
-        iconEl.innerText = "⚠️️";
+        iconEl.innerText = "⚠️";
       } else {
         iconEl.innerText = "📢";
       }
@@ -600,43 +633,6 @@
         .catch(err => {
           console.error("LIFF Init Error: ", err);
         });
-    }
-
-    function checkUrlReportParam() {
-      let reportReqId = "";
-
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has("report")) {
-        reportReqId = urlParams.get("report");
-      }
-
-      if (!reportReqId && window.location.hash) {
-        const hashStr = window.location.hash.substring(1);
-        const hashParams = new URLSearchParams(hashStr.includes("?") ? hashStr.split("?")[1] : hashStr);
-        if (hashParams.has("report")) {
-          reportReqId = hashParams.get("report");
-        }
-      }
-
-      if (!reportReqId) {
-        try {
-          const match = window.location.href.match(/report=([A-Za-z0-9\-]+)/);
-          if (match && match[1]) {
-            reportReqId = match[1];
-          }
-        } catch(e) {}
-      }
-
-      if (reportReqId) {
-        const cleanDigits = reportReqId.replace(/[^0-9]/g, "");
-        const formattedId = cleanDigits ? "V-" + cleanDigits.padStart(3, "0") : reportReqId;
-        
-        document.getElementById("report-quest-id").value = formattedId;
-        setTimeout(() => {
-          if (document.activeElement) document.activeElement.blur();
-          document.getElementById("report-modal").style.display = "flex";
-        }, 500);
-      }
     }
 
     function openQuestNumberSelectModal() {
