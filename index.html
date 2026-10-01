@@ -408,7 +408,7 @@
     <div class="modal">
       <h2>新規ボランティア利用登録</h2>
       <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">
-        登録すると専用の「3桁の登録番号」が自動発行されます。
+        お名前と電話番号を入力するだけで、専用番号の発行とLINE連携が自動で完了します。
       </p>
       <div class="form-group">
         <label for="reg-name">お名前（本名・必須）</label>
@@ -419,11 +419,11 @@
         <input type="tel" inputmode="numeric" pattern="[0-9]*" id="reg-phone" placeholder="例：09012345678" required>
       </div>
       <div class="notice-box">
-        ※次回からのログインは「登録番号」と「お電話番号の下4桁」で行えます。
+        ※登録完了後、自動であなた専用のLINE連携が行われます。
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeRegisterModal()">戻る</button>
-        <button type="button" class="btn-submit" id="btn-submit-reg" onclick="submitRegistration()">登録して番号を発行</button>
+        <button type="button" class="btn-submit" id="btn-submit-reg" onclick="submitRegistration()">登録を完了する</button>
       </div>
     </div>
   </div>
@@ -529,7 +529,7 @@
   <script>
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
     // ★ご自身のGASウェブアプリURL（末尾 /exec）
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
 
     let currentLineUserId = "";
     let currentLineDisplayName = "";
@@ -541,9 +541,6 @@
       handleInitialAuthAndReport();
     });
 
-    /**
-     * ★改修：日本語や特殊文字を100%安全に送るクエリ生成ラッパー
-     */
     async function callGasApi(payload) {
       try {
         const parts = [];
@@ -651,6 +648,9 @@
       }
     }
 
+    /**
+     * ★重要：LIFF初期化＆UID自動取得
+     */
     function initLiffSafely() {
       if (typeof liff === "undefined" || !MY_LIFF_ID || MY_LIFF_ID.trim() === "") return;
 
@@ -670,6 +670,8 @@
               }
               currentLineDisplayName = profile.displayName || "";
             }).catch(() => {});
+          } else {
+            // LINE内ブラウザでない場合はログインを促すかサイレント判定
           }
         })
         .catch(err => {
@@ -871,6 +873,9 @@
       document.getElementById("register-modal").style.display = "none";
     }
 
+    /**
+     * ★改修：新規登録と同時にUIDを完全自動連携＆シームレスログイン
+     */
     async function submitRegistration() {
       if (document.activeElement) document.activeElement.blur();
 
@@ -880,6 +885,14 @@
       if (!name || !phone) {
         showCustomAlert("入力エラー", "お名前とお電話番号を両方入力してください。", "error");
         return;
+      }
+
+      // もしUIDがまだ取れていない場合は再度取得試行
+      if (!currentLineUserId && typeof liff !== "undefined" && liff.isLoggedIn()) {
+        try {
+          const profile = await liff.getProfile();
+          if (profile && profile.userId) currentLineUserId = profile.userId;
+        } catch(e) {}
       }
 
       const btn = document.getElementById("btn-submit-reg");
@@ -900,18 +913,32 @@
         document.getElementById("login-vol-phone4").value = phoneLast4;
         closeRegisterModal();
 
-        showCustomAlert(
-          "登録完了！",
-          `あなた専用のボランティア登録番号は\n【 ${res.volunteerNo} 】です。\n\n━━━━━━━━━━━━━━\n【最重要：LINE通知の有効化】\n公式LINEのトーク画面で、以下のように送信してください：\n\n『 ${res.volunteerNo} ${phoneLast4} 』\n\n（登録番号と電話下4桁をスペースで区切って送信）\n━━━━━━━━━━━━━━`,
-          "success",
-          () => {
-            submitLogin(true);
-          }
-        );
+        // LINE UIDが自動取得できている場合（LINE内ブラウザで開いている場合）
+        if (currentLineUserId && currentLineUserId.startsWith("U")) {
+          showCustomAlert(
+            "登録＆連携完了！",
+            `ボランティア登録番号：【 ${res.volunteerNo} 】\n\nLINEアカウントとの自動連携が完了しました！\nトーク画面での番号送信は不要です。このまま募集一覧をご覧ください。`,
+            "success",
+            () => {
+              submitLogin(true);
+            }
+          );
+        } else {
+          // PCブラウザ等でLINE UIDが取得できなかった場合の安全用案内
+          showCustomAlert(
+            "登録完了！",
+            `あなた専用のボランティア登録番号は\n【 ${res.volunteerNo} 】です。\n\n※LINE通知を有効化するには、公式LINEトークに『 ${res.volunteerNo} ${phoneLast4} 』と送信してください。`,
+            "success",
+            () => {
+              submitLogin(true);
+            }
+          );
+        }
+
       } catch (err) {
         showCustomAlert("登録エラー", err.message, "error");
       } finally {
-        btn.innerText = "登録して番号を発行";
+        btn.innerText = "登録を完了する";
         btn.disabled = false;
       }
     }
