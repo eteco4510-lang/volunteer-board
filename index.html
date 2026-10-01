@@ -529,7 +529,7 @@
   <script>
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
     // ★ご自身のGASウェブアプリURL（末尾 /exec）
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
 
     let currentLineUserId = "";
     let currentLineDisplayName = "";
@@ -542,28 +542,28 @@
     });
 
     /**
-     * ★修正：iOS Safari / LINE内ブラウザの Load failed を完全に防ぐ個別パラメータURL生成
+     * ★改修：日本語や特殊文字を100%安全に送るクエリ生成ラッパー
      */
     async function callGasApi(payload) {
       try {
-        const queryParams = new URLSearchParams();
-        for (const [key, val] of Object.entries(payload)) {
-          if (val !== undefined && val !== null) {
-            queryParams.append(key, String(val));
+        const parts = [];
+        for (const key in payload) {
+          if (Object.prototype.hasOwnProperty.call(payload, key)) {
+            const val = payload[key];
+            if (val !== undefined && val !== null) {
+              parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+            }
           }
         }
 
-        const url = `${GAS_API_URL}?${queryParams.toString()}`;
+        const url = GAS_API_URL + (GAS_API_URL.includes("?") ? "&" : "?") + parts.join("&");
 
         const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
-          }
+          method: "GET"
         });
 
         if (!response.ok) {
-          throw new Error(`HTTPエラー (${response.status})`);
+          throw new Error("HTTPエラー (" + response.status + ")");
         }
 
         const result = await response.json();
