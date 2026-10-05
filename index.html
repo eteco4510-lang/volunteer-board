@@ -9,16 +9,16 @@
     :root {
       --primary: #06c755;
       --primary-hover: #05b04b;
-      --bg: #f8fafc;
+      --bg: #f1f5f9;
       --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-sub: #64748b;
+      --text-main: #0f172a;
+      --text-sub: #475569;
       --badge-bg: #e0f2fe;
-      --badge-text: #0369a1;
+      --badge-text: #0284c7;
       --line-badge-bg: #dcfce7;
-      --line-badge-text: #166534;
+      --line-badge-text: #14532d;
       --warning-bg: #fef3c7;
-      --warning-text: #92400e;
+      --warning-text: #78350f;
     }
     * {
       box-sizing: border-box;
@@ -27,28 +27,39 @@
       -webkit-tap-highlight-color: transparent;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", sans-serif;
       background-color: var(--bg);
       color: var(--text-main);
-      padding: 12px;
-      line-height: 1.5;
+      padding: 14px 12px 40px;
+      line-height: 1.6;
+      font-size: 16px;
     }
     header {
       max-width: 680px;
-      margin: 0 auto 14px;
+      margin: 0 auto 16px;
       text-align: center;
     }
-    header h1 { font-size: 1.3rem; color: var(--text-main); margin-bottom: 4px; }
-    header p { font-size: 0.82rem; color: var(--text-sub); }
+    header h1 { 
+      font-size: 1.55rem; 
+      color: var(--text-main); 
+      margin-bottom: 6px; 
+      font-weight: 800;
+    }
+    header p { 
+      font-size: 0.95rem; 
+      color: var(--text-sub); 
+      font-weight: 500;
+    }
 
+    /* 認証パネル */
     .auth-panel {
       max-width: 680px;
-      margin: 0 auto 16px;
+      margin: 0 auto 18px;
       background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
     .auth-logged-in {
       display: flex;
@@ -56,33 +67,35 @@
       justify-content: space-between;
       background: var(--line-badge-bg);
       color: var(--line-badge-text);
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-weight: 500;
-      font-size: 0.88rem;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 1.05rem;
+      border: 1px solid #86efac;
     }
     .auth-logged-in-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
     .btn-report-manual {
       background: #0284c7;
       border: none;
       color: #fff;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.8rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.92rem;
       font-weight: bold;
       cursor: pointer;
       white-space: nowrap;
     }
     .btn-reset-auth {
-      background: transparent;
-      border: 1px solid var(--line-badge-text);
+      background: #ffffff;
+      border: 1.5px solid var(--line-badge-text);
       color: var(--line-badge-text);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 0.78rem;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: bold;
       cursor: pointer;
       white-space: nowrap;
     }
@@ -90,7 +103,12 @@
     .auth-login-form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+    }
+    .auth-form-title {
+      font-size: 1.02rem; 
+      color: #1e293b; 
+      font-weight: bold;
     }
     .auth-inputs-row {
       display: flex;
@@ -98,134 +116,164 @@
       gap: 10px;
     }
     .auth-input-no {
-      width: 95px;
+      width: 105px;
       flex-shrink: 0;
-      padding: 10px 6px;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 1rem;
+      padding: 12px 8px;
+      border: 2px solid #94a3b8;
+      border-radius: 10px;
+      font-size: 1.2rem;
       text-align: center;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       font-weight: bold;
       background: #fafafa;
     }
     .auth-input-phone {
-      width: 120px;
-      flex-shrink: 0;
-      padding: 10px 6px;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 1rem;
+      flex: 1;
+      padding: 12px 8px;
+      border: 2px solid #94a3b8;
+      border-radius: 10px;
+      font-size: 1.2rem;
       text-align: center;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       font-weight: bold;
       background: #fafafa;
     }
 
     .auth-buttons-row {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       width: 100%;
     }
     .btn-login-large {
-      flex: 1.6;
+      flex: 1.5;
       background: var(--primary);
       color: #fff;
       border: none;
-      padding: 11px 8px;
-      border-radius: 8px;
+      padding: 14px 10px;
+      border-radius: 10px;
       font-weight: bold;
-      font-size: 0.95rem;
+      font-size: 1.15rem;
       cursor: pointer;
       text-align: center;
-      box-shadow: 0 1px 2px rgba(6, 199, 85, 0.2);
+      box-shadow: 0 2px 4px rgba(6, 199, 85, 0.3);
     }
     .btn-login-large:active { background: var(--primary-hover); }
     .btn-to-reg-large {
       flex: 1;
-      background: #f1f5f9;
-      color: #334155;
-      border: 1.5px solid #cbd5e1;
-      padding: 11px 8px;
-      border-radius: 8px;
+      background: #f8fafc;
+      color: #1e293b;
+      border: 2px solid #cbd5e1;
+      padding: 14px 10px;
+      border-radius: 10px;
       font-weight: bold;
-      font-size: 0.9rem;
+      font-size: 1.05rem;
       cursor: pointer;
       text-align: center;
     }
     .btn-to-reg-large:active { background: #e2e8f0; }
 
     .container { max-width: 680px; margin: 0 auto; }
-    .loading { text-align: center; padding: 30px; color: var(--text-sub); }
+    .loading { 
+      text-align: center; 
+      padding: 40px; 
+      color: var(--text-sub); 
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
     
+    /* 認証前案内カード */
     .unauth-placeholder {
       background: #ffffff;
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 30px 20px;
+      border: 2px dashed #94a3b8;
+      border-radius: 14px;
+      padding: 36px 20px;
       text-align: center;
-      color: #64748b;
-      margin-top: 10px;
+      color: #475569;
+      margin-top: 12px;
     }
     .unauth-placeholder .lock-icon {
-      font-size: 2.2rem;
-      margin-bottom: 8px;
+      font-size: 2.8rem;
+      margin-bottom: 10px;
       display: block;
     }
     .unauth-placeholder h3 {
-      font-size: 1.05rem;
-      color: #334155;
-      margin-bottom: 6px;
+      font-size: 1.25rem;
+      color: #0f172a;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
     .unauth-placeholder p {
-      font-size: 0.85rem;
-      line-height: 1.5;
+      font-size: 1.02rem;
+      line-height: 1.6;
     }
 
+    /* 案件カード */
     .card {
       background: var(--card-bg);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+      border: 1.5px solid #cbd5e1;
     }
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 8px;
-      gap: 8px;
+      margin-bottom: 12px;
+      gap: 10px;
     }
-    .card-title { font-size: 1.05rem; font-weight: bold; flex: 1; }
+    .card-title { 
+      font-size: 1.3rem; 
+      font-weight: 800; 
+      flex: 1; 
+      line-height: 1.4;
+      color: #0f172a;
+    }
     .badge {
-      background: var(--badge-bg);
-      color: var(--badge-text);
-      font-size: 0.78rem;
-      font-weight: bold;
-      padding: 3px 6px;
-      border-radius: 6px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.95rem;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 8px;
       white-space: nowrap;
+      border: 1px solid #bae6fd;
     }
-    .card-row { margin-bottom: 5px; font-size: 0.88rem; }
-    .card-row strong { color: var(--text-sub); display: inline-block; width: 65px; }
+    .card-row { 
+      margin-bottom: 8px; 
+      font-size: 1.05rem; 
+      display: flex;
+      align-items: flex-start;
+    }
+    .card-row strong { 
+      color: #334155; 
+      display: inline-block; 
+      width: 70px; 
+      flex-shrink: 0;
+      font-weight: 800;
+    }
+    .card-row span {
+      flex: 1;
+      color: #1e293b;
+    }
 
     .briefing-link-box {
-      margin-top: 8px;
-      margin-bottom: 4px;
+      margin-top: 10px;
+      margin-bottom: 6px;
       background: #f0fdf4;
-      border: 1px dashed #86efac;
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 0.84rem;
+      border: 1.5px dashed #4ade80;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.98rem;
     }
     .briefing-link-box a {
-      color: #15803d;
+      color: #166534;
       font-weight: bold;
       text-decoration: underline;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
     
     .apply-btn {
@@ -233,19 +281,22 @@
       background: var(--primary);
       color: #fff;
       border: none;
-      padding: 11px;
-      border-radius: 8px;
-      font-size: 0.95rem;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1.15rem;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 10px;
+      box-shadow: 0 2px 4px rgba(6, 199, 85, 0.25);
     }
+    .apply-btn:active { background: var(--primary-hover); }
 
+    /* モーダル */
     .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.6);
       align-items: center;
       justify-content: center;
       padding: 16px;
@@ -254,94 +305,98 @@
     .modal {
       background: #fff;
       width: 100%;
-      max-width: 440px;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      max-width: 480px;
+      border-radius: 16px;
+      padding: 24px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
       max-height: 90vh;
       overflow-y: auto;
     }
-    .modal h2 { font-size: 1.15rem; margin-bottom: 12px; }
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 0.84rem; font-weight: bold; margin-bottom: 4px; }
+    .modal h2 { font-size: 1.35rem; margin-bottom: 14px; font-weight: 800; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.95rem; font-weight: bold; margin-bottom: 6px; }
     .form-group input, .form-group select, .form-group textarea {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 0.95rem;
+      padding: 12px;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 1.05rem;
     }
 
     .quest-input-box {
       display: flex;
       align-items: center;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
       overflow: hidden;
       background: #fff;
     }
     .quest-prefix {
       background: #f1f5f9;
-      padding: 10px 12px;
+      padding: 12px 14px;
       font-weight: bold;
-      color: #475569;
-      font-size: 1rem;
-      border-right: 1px solid #cbd5e1;
+      color: #334155;
+      font-size: 1.15rem;
+      border-right: 2px solid #cbd5e1;
     }
     .quest-num-input {
       flex: 1;
       border: none !important;
-      padding: 10px !important;
-      font-size: 1.1rem !important;
+      padding: 12px !important;
+      font-size: 1.25rem !important;
       font-weight: bold;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
     }
 
     .notice-box {
       background: var(--warning-bg);
       color: var(--warning-text);
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      margin-bottom: 10px;
-      line-height: 1.4;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+      line-height: 1.5;
+      font-weight: 500;
     }
-    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
     .btn-submit {
       flex: 1;
       background: var(--primary);
       color: #fff;
       border: none;
-      padding: 11px;
-      border-radius: 8px;
+      padding: 14px;
+      border-radius: 10px;
       font-weight: bold;
+      font-size: 1.05rem;
       cursor: pointer;
     }
     .btn-cancel {
       flex: 1;
       background: #e2e8f0;
-      color: var(--text-main);
+      color: #1e293b;
       border: none;
-      padding: 11px;
-      border-radius: 8px;
+      padding: 14px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 1.05rem;
       cursor: pointer;
     }
 
     #custom-alert-modal { z-index: 1000; }
-    .custom-alert-box { text-align: center; padding: 24px 18px 20px; }
-    .alert-icon { font-size: 2.8rem; margin-bottom: 10px; display: block; }
-    .alert-title { font-size: 1.25rem; font-weight: bold; color: #0f172a; margin-bottom: 12px; }
+    .custom-alert-box { text-align: center; padding: 26px 20px 22px; }
+    .alert-icon { font-size: 3rem; margin-bottom: 12px; display: block; }
+    .alert-title { font-size: 1.35rem; font-weight: bold; color: #0f172a; margin-bottom: 12px; }
     .alert-body {
-      font-size: 1rem;
-      color: #334155;
+      font-size: 1.05rem;
+      color: #1e293b;
       line-height: 1.6;
       white-space: pre-wrap;
       word-break: break-word;
       background: #f8fafc;
-      padding: 14px;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-      margin-bottom: 18px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
+      margin-bottom: 20px;
       text-align: left;
     }
     .alert-btn {
@@ -349,9 +404,9 @@
       background: var(--primary);
       color: #fff;
       border: none;
-      padding: 13px;
-      border-radius: 8px;
-      font-size: 1.05rem;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1.15rem;
       font-weight: bold;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(6, 199, 85, 0.25);
@@ -378,12 +433,12 @@
     </div>
 
     <div id="auth-login-view" class="auth-login-form">
-      <div style="font-size:0.82rem; color:#475569; font-weight:bold;">
+      <div class="auth-form-title">
         ボランティア認証（登録番号・電話番号下4桁）
       </div>
       <div class="auth-inputs-row">
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-no" class="auth-input-no" placeholder="番号(001)" maxlength="4">
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-phone4" class="auth-input-phone" placeholder="電話下4桁" maxlength="4">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-no" class="auth-input-no" placeholder="001" maxlength="4">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-phone4" class="auth-input-phone" placeholder="電話番号下4桁" maxlength="4">
       </div>
       <div class="auth-buttons-row">
         <button type="button" class="btn-login-large" id="btn-login-submit" onclick="submitLogin()">認証・ログイン</button>
@@ -407,7 +462,7 @@
   <div id="register-modal" class="modal-overlay">
     <div class="modal">
       <h2>新規ボランティア利用登録</h2>
-      <p style="font-size:0.82rem; color:#64748b; margin-bottom:10px;">
+      <p style="font-size:0.95rem; color:#475569; margin-bottom:12px;">
         お名前と電話番号を入力するだけで、専用番号の発行とLINE連携が自動で完了します。
       </p>
       <div class="form-group">
@@ -434,7 +489,7 @@
       <h2 id="modal-task-title">ボランティアに立候補する</h2>
       <input type="hidden" id="modal-quest-id">
 
-      <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.88rem;">
+      <div style="background:#f1f5f9; padding:12px; border-radius:10px; margin-bottom:12px; font-size:1.02rem;">
         <div><strong>登録番号：</strong><span id="apply-vol-no"></span></div>
         <div><strong>お名前：</strong><span id="apply-vol-name"></span> 様</div>
       </div>
@@ -454,7 +509,7 @@
   <div id="quest-number-modal" class="modal-overlay">
     <div class="modal">
       <h2>📋 完了報告する案件番号</h2>
-      <p style="font-size:0.82rem; color:#64748b; margin-bottom:12px;">
+      <p style="font-size:0.95rem; color:#475569; margin-bottom:14px;">
         報告を行う募集番号の「数字」を入力してください。
       </p>
 
@@ -477,13 +532,13 @@
   <div id="report-modal" class="modal-overlay">
     <div class="modal">
       <h2>🍀 活動完了報告アンケート</h2>
-      <p style="font-size:0.82rem; color:#64748b; margin-bottom:12px;">
+      <p style="font-size:0.95rem; color:#475569; margin-bottom:14px;">
         本日の活動お疲れ様でした！1分程度で状況をお知らせください。
       </p>
 
       <div class="form-group">
         <label>対象案件</label>
-        <input type="text" id="report-quest-id" readonly style="background:#f1f5f9; font-weight:bold; font-size:1.05rem;">
+        <input type="text" id="report-quest-id" readonly style="background:#f1f5f9; font-weight:bold; font-size:1.15rem;">
       </div>
 
       <div class="form-group">
@@ -648,9 +703,6 @@
       }
     }
 
-    /**
-     * ★重要：LIFF初期化＆UID自動取得
-     */
     function initLiffSafely() {
       if (typeof liff === "undefined" || !MY_LIFF_ID || MY_LIFF_ID.trim() === "") return;
 
@@ -670,8 +722,6 @@
               }
               currentLineDisplayName = profile.displayName || "";
             }).catch(() => {});
-          } else {
-            // LINE内ブラウザでない場合はログインを促すかサイレント判定
           }
         })
         .catch(err => {
@@ -873,9 +923,6 @@
       document.getElementById("register-modal").style.display = "none";
     }
 
-    /**
-     * ★改修：新規登録と同時にUIDを完全自動連携＆シームレスログイン
-     */
     async function submitRegistration() {
       if (document.activeElement) document.activeElement.blur();
 
@@ -887,7 +934,6 @@
         return;
       }
 
-      // もしUIDがまだ取れていない場合は再度取得試行
       if (!currentLineUserId && typeof liff !== "undefined" && liff.isLoggedIn()) {
         try {
           const profile = await liff.getProfile();
@@ -913,18 +959,16 @@
         document.getElementById("login-vol-phone4").value = phoneLast4;
         closeRegisterModal();
 
-        // LINE UIDが自動取得できている場合（LINE内ブラウザで開いている場合）
         if (currentLineUserId && currentLineUserId.startsWith("U")) {
           showCustomAlert(
             "登録＆連携完了！",
-            `ボランティア登録番号：【 ${res.volunteerNo} 】\n\nLINEアカウントとの自動連携が完了しました！\n無理のない範囲で楽しく活動しましょう！`,
+            `ボランティア登録番号：【 ${res.volunteerNo} 】\n\nLINEアカウントとの自動連携が完了しました！\nトーク画面での番号送信は不要です。このまま募集一覧をご覧ください。`,
             "success",
             () => {
               submitLogin(true);
             }
           );
         } else {
-          // PCブラウザ等でLINE UIDが取得できなかった場合の安全用案内
           showCustomAlert(
             "登録完了！",
             `あなた専用のボランティア登録番号は\n【 ${res.volunteerNo} 】です。\n\n※LINE通知を有効化するには、公式LINEトークに『 ${res.volunteerNo} ${phoneLast4} 』と送信してください。`,
@@ -955,7 +999,7 @@
         renderQuests(res);
       } catch (err) {
         loadingEl.style.display = "none";
-        container.innerHTML = `<div class="card" style="text-align:center; color:#ef4444;">読み込みエラー: ${err.message}</div>`;
+        container.innerHTML = `<div class="card" style="text-align:center; color:#ef4444; font-size:1.1rem; font-weight:bold;">読み込みエラー: ${err.message}</div>`;
       }
     }
 
@@ -965,7 +1009,7 @@
       container.innerHTML = "";
 
       if (!quests || quests.length === 0) {
-        container.innerHTML = '<div class="card" style="text-align:center; color:#64748b;">現在募集中のボランティア依頼はありません。</div>';
+        container.innerHTML = '<div class="card" style="text-align:center; color:#64748b; font-size:1.1rem; padding:30px;">現在募集中のボランティア依頼はありません。</div>';
         return;
       }
 
@@ -978,7 +1022,7 @@
           briefingHtml = `
             <div class="briefing-link-box">
               <a href="${q.briefingUrl}" target="_blank" rel="noopener noreferrer">
-                📄 事前ブリーフィング資料・写真を確認 ↗
+                📄 事前ブリーフィング資料・現場写真を確認 ↗
               </a>
             </div>
           `;
@@ -989,9 +1033,9 @@
             <div class="card-title">${q.task}</div>
             <div class="badge">あと ${q.remaining}名（定員${q.capacity}名）</div>
           </div>
-          <div class="card-row"><strong>日時</strong>${q.date} ${q.time}〜</div>
-          <div class="card-row"><strong>場所</strong>${q.location}</div>
-          <div class="card-row"><strong>備考</strong>${q.notes || "特になし"}</div>
+          <div class="card-row"><strong>日時</strong><span>${q.date} ${q.time}〜</span></div>
+          <div class="card-row"><strong>場所</strong><span>${q.location}</span></div>
+          <div class="card-row"><strong>備考</strong><span>${q.notes || "特になし"}</span></div>
           ${briefingHtml}
           <button class="apply-btn" onclick="handleApplyClick('${q.id}', '${q.task}')">立候補する</button>
         `;
