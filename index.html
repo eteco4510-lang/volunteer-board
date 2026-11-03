@@ -4,784 +4,98 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>地域ボランティア募集 掲示板</title>
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    /* --------------------------------------------------
-     * デジタル庁デザインシステム（DADS）準拠 デザイントークン
-     * -------------------------------------------------- */
-    :root {
-      /* カラートークン */
-      --color-primary: #004ea2;          /* DADS メインブルー */
-      --color-primary-hover: #003774;    /* ホバー時ダークブルー */
-      --color-primary-active: #00234b;
-      --color-bg-base: #f5f6f8;          /* ニュートラル背景 */
-      --color-surface: #ffffff;          /* コンポーネント背景 */
-      
-      --color-text-primary: #1a1a1a;     /* 本文高コントラスト */
-      --color-text-secondary: #4d5156;   /* 補足テキスト */
-      --color-text-tertiary: #6b7280;
-      
-      --color-border-subtle: #d2d5dc;    /* 境界線 */
-      --color-border-strong: #71767c;    /* 入力フォーム境界線（視認性確保） */
-      --color-focus: #002b80;            /* キーボード操作フォーカスリング */
-      
-      /* ステータス・コールアウト */
-      --color-status-success-bg: #e6f4ea;
-      --color-status-success-text: #0d652d;
-      --color-status-success-border: #34a853;
-      
-      --color-status-info-bg: #e8f0fe;
-      --color-status-info-text: #174ea6;
-      --color-status-info-border: #1a73e8;
-
-      --color-status-alert-bg: #fef7e0;
-      --color-status-alert-text: #7a4f01;
-      --color-status-alert-border: #f9ab00;
-
-      --color-status-error-bg: #fce8e6;
-      --color-status-error-text: #c5221f;
-      --color-status-error-border: #ea4335;
-      
-      /* タイポグラフィ・レイアウト */
-      --font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Meiryo", "BIZ UDPGothic", sans-serif;
-      --radius-sm: 4px;
-      --radius-md: 6px;
-      --radius-lg: 8px;
-    }
-
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: var(--font-family);
-      background-color: var(--color-bg-base);
-      color: var(--color-text-primary);
-      padding: 16px 12px 48px;
-      line-height: 1.7;
-      font-size: 16px;
-      overflow-x: hidden;
-      letter-spacing: 0.02em;
-    }
-
-    /* アクセシビリティ：フォーカス視覚表示 */
-    button:focus-visible,
-    input:focus-visible,
-    select:focus-visible,
-    textarea:focus-visible,
-    a:focus-visible {
-      outline: 3px solid var(--color-focus);
-      outline-offset: 2px;
-    }
-
-    /* ヘッダー */
-    header {
-      max-width: 680px;
-      margin: 8px auto 20px;
-      padding: 0 4px;
-      text-align: left;
-      border-bottom: 2px solid var(--color-primary);
-      padding-bottom: 12px;
-    }
-    header h1 { 
-      font-size: 1.45rem; 
-      color: var(--color-text-primary); 
-      margin-bottom: 4px; 
-      font-weight: 700;
-      line-height: 1.4;
-    }
-    header p { 
-      font-size: 0.92rem; 
-      color: var(--color-text-secondary); 
-      font-weight: 400;
-    }
-
-    .container { 
-      max-width: 680px; 
-      width: 100%; 
-      margin: 0 auto; 
-    }
-
-    /* 認証パネル（DADSカードスタイル） */
-    .auth-panel {
-      max-width: 680px;
-      width: 100%;
-      margin: 0 auto 20px;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border-subtle);
-      border-radius: var(--radius-md);
-      padding: 18px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    /* ログイン完了表示 */
-    .auth-logged-in {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background: var(--color-status-success-bg);
-      color: var(--color-status-success-text);
-      padding: 14px 16px;
-      border-radius: var(--radius-sm);
-      border-left: 6px solid var(--color-status-success-border);
-      font-weight: 700;
-      font-size: 1rem;
-    }
-    @media (min-width: 480px) {
-      .auth-logged-in {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
+  
+  <!-- Tailwind CSS & React / Babel / Lucide / LIFF CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            }
+          }
+        }
       }
     }
-    .auth-logged-in-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+  </script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-    /* 認証フォーム */
-    .auth-login-form {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      width: 100%;
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
     }
-    .auth-form-title {
-      font-size: 0.95rem; 
-      color: var(--color-text-primary); 
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .auth-inputs-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
-    .auth-input-no {
-      flex: 0 0 38%;
-      min-width: 0;
-      min-height: 48px;
-      padding: 10px 8px;
-      border: 1px solid var(--color-border-strong);
-      border-radius: var(--radius-sm);
-      font-size: 1.15rem;
-      text-align: center;
-      letter-spacing: 2px;
-      font-weight: 700;
-      background: #ffffff;
-      color: var(--color-text-primary);
-    }
-    .auth-input-phone {
-      flex: 1 1 62%;
-      min-width: 0;
-      min-height: 48px;
-      padding: 10px 10px;
-      border: 1px solid var(--color-border-strong);
-      border-radius: var(--radius-sm);
-      font-size: 1.15rem;
-      text-align: center;
-      letter-spacing: 2px;
-      font-weight: 700;
-      background: #ffffff;
-      color: var(--color-text-primary);
-    }
-    .auth-buttons-row {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-    }
-
-    /* ボタンスタイル（DADS基本設計） */
-    .btn-primary {
-      background-color: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid var(--color-primary);
-      min-height: 46px;
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-    }
-    .btn-primary:hover {
-      background-color: var(--color-primary-hover);
-      border-color: var(--color-primary-hover);
-    }
-    .btn-primary:active {
-      background-color: var(--color-primary-active);
-    }
-
-    .btn-secondary {
-      background-color: #ffffff;
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border-strong);
-      min-height: 46px;
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-    }
-    .btn-secondary:hover {
-      background-color: #f1f3f5;
-      border-color: #4b5563;
-    }
-    .btn-secondary:active {
-      background-color: #e5e7eb;
-    }
-
-    .btn-login-large {
-      flex: 1.4;
-      background-color: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid var(--color-primary);
-      border-radius: var(--radius-sm);
-      min-height: 48px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-login-large:hover { background-color: var(--color-primary-hover); }
-    
-    .btn-to-reg-large {
-      flex: 1;
-      background-color: #ffffff;
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border-strong);
-      border-radius: var(--radius-sm);
-      min-height: 48px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-to-reg-large:hover { background-color: #f1f3f5; }
-
-    .btn-report-manual {
-      background-color: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid var(--color-primary);
-      padding: 7px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .btn-report-manual:hover { background-color: var(--color-primary-hover); }
-
-    .btn-reset-auth {
-      background-color: #ffffff;
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border-strong);
-      padding: 7px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 0.88rem;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .btn-reset-auth:hover { background-color: #f1f3f5; }
-
-    /* プレースホルダー（未認証状態） */
-    .unauth-placeholder {
-      background: var(--color-surface);
-      border: 2px dashed var(--color-border-subtle);
-      border-radius: var(--radius-md);
-      padding: 40px 20px;
-      text-align: center;
-      color: var(--color-text-secondary);
-      margin-top: 12px;
-    }
-    .unauth-placeholder .lock-icon {
-      font-size: 2.4rem;
-      margin-bottom: 12px;
-      display: block;
-    }
-    .unauth-placeholder h3 {
-      font-size: 1.15rem;
-      color: var(--color-text-primary);
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-    .unauth-placeholder p {
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    .loading { 
-      text-align: center; 
-      padding: 40px 16px; 
-      color: var(--color-text-secondary); 
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    /* 募集案件カード */
-    .card {
-      background: var(--color-surface);
-      border-radius: var(--radius-md);
-      padding: 20px 18px;
-      margin-bottom: 16px;
-      border: 1px solid var(--color-border-subtle);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-      width: 100%;
-    }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 14px;
-      gap: 12px;
-      border-bottom: 1px solid #eef0f3;
-      padding-bottom: 10px;
-    }
-    .card-title { 
-      font-size: 1.25rem; 
-      font-weight: 700; 
-      flex: 1; 
-      line-height: 1.45;
-      color: var(--color-text-primary);
-    }
-    /* DADSステータスタグ */
-    .badge {
-      background: var(--color-status-info-bg);
-      color: var(--color-status-info-text);
-      font-size: 0.88rem;
-      font-weight: 700;
-      padding: 4px 8px;
-      border-radius: var(--radius-sm);
-      white-space: nowrap;
-      border: 1px solid var(--color-status-info-border);
-    }
-    .card-row { 
-      margin-bottom: 8px; 
-      font-size: 0.98rem; 
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .card-row strong { 
-      color: var(--color-text-secondary); 
-      display: inline-block; 
-      width: 65px; 
-      flex-shrink: 0;
-      font-weight: 700;
-    }
-    .card-row span {
-      flex: 1;
-      color: var(--color-text-primary);
-      word-break: break-word;
-    }
-
-    /* 資料リンクボックス */
-    .briefing-link-box {
-      margin-top: 12px;
-      margin-bottom: 12px;
-      background: #f8fafc;
-      border: 1px solid var(--color-border-subtle);
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.92rem;
-    }
-    .briefing-link-box a {
-      color: var(--color-primary);
-      font-weight: 700;
-      text-decoration: underline;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      word-break: break-all;
-    }
-    .briefing-link-box a:hover {
-      color: var(--color-primary-hover);
-    }
-
-    .apply-btn {
-      width: 100%;
-      background: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid var(--color-primary);
-      padding: 13px;
-      border-radius: var(--radius-sm);
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: background-color 0.15s ease-in-out;
-    }
-    .apply-btn:hover { background: var(--color-primary-hover); }
-
-    /* モーダルダイアログ */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.65);
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 100;
-    }
-    .modal {
-      background: #ffffff;
-      width: 100%;
-      max-width: 500px;
-      border-radius: var(--radius-md);
-      padding: 24px 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .modal h2 { 
-      font-size: 1.25rem; 
-      margin-bottom: 12px; 
-      font-weight: 700; 
-      color: var(--color-text-primary);
-      border-bottom: 2px solid var(--color-border-subtle);
-      padding-bottom: 8px;
-    }
-    
-    .form-group { margin-bottom: 16px; }
-    .form-group label { 
-      display: block; 
-      font-size: 0.92rem; 
-      font-weight: 700; 
-      margin-bottom: 6px; 
-      color: var(--color-text-primary);
-    }
-    .form-group input, 
-    .form-group select, 
-    .form-group textarea {
-      width: 100%;
-      min-height: 46px;
-      padding: 10px 12px;
-      border: 1px solid var(--color-border-strong);
-      border-radius: var(--radius-sm);
-      font-size: 1rem;
-      background: #ffffff;
-      color: var(--color-text-primary);
-      font-family: inherit;
-    }
-
-    .quest-input-box {
-      display: flex;
-      align-items: center;
-      border: 1px solid var(--color-border-strong);
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      background: #ffffff;
-      width: 100%;
-    }
-    .quest-prefix {
-      background: #edf0f5;
-      padding: 10px 14px;
-      font-weight: 700;
-      color: var(--color-text-secondary);
-      font-size: 1.1rem;
-      border-right: 1px solid var(--color-border-strong);
-      flex-shrink: 0;
-    }
-    .quest-num-input {
-      flex: 1;
-      min-width: 0;
-      border: none !important;
-      padding: 10px 12px !important;
-      font-size: 1.2rem !important;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-    }
-
-    /* DADS コールアウトボックス */
-    .notice-box {
-      background: var(--color-status-alert-bg);
-      color: var(--color-status-alert-text);
-      padding: 12px 14px;
-      border-left: 5px solid var(--color-status-alert-border);
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      margin-bottom: 16px;
-      line-height: 1.6;
-    }
-
-    .modal-actions { 
-      display: flex; 
-      gap: 12px; 
-      margin-top: 20px; 
-    }
-    .btn-submit {
-      flex: 1.2;
-      background: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid var(--color-primary);
-      min-height: 46px;
-      padding: 10px;
-      border-radius: var(--radius-sm);
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.15s ease-in-out;
-    }
-    .btn-submit:hover { background: var(--color-primary-hover); }
-
-    .btn-cancel {
-      flex: 1;
-      background: #ffffff;
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border-strong);
-      min-height: 46px;
-      padding: 10px;
-      border-radius: var(--radius-sm);
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .btn-cancel:hover { background: #f1f3f5; }
-
-    /* カスタム通知モーダル */
-    #custom-alert-modal { z-index: 1000; }
-    .custom-alert-box { 
-      text-align: center; 
-      padding: 24px 20px 20px; 
-    }
-    .alert-icon { 
-      font-size: 2.8rem; 
-      margin-bottom: 12px; 
-      display: block; 
-    }
-    .alert-title { 
-      font-size: 1.25rem; 
-      font-weight: 700; 
-      color: var(--color-text-primary); 
-      margin-bottom: 12px; 
-    }
-    .alert-body {
-      font-size: 0.98rem;
-      color: var(--color-text-primary);
-      line-height: 1.65;
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: #f8fafc;
-      padding: 14px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--color-border-subtle);
-      margin-bottom: 18px;
-      text-align: left;
-    }
-    .alert-btn {
-      width: 100%;
-      background: var(--color-primary);
-      color: #ffffff;
-      border: 1px solid var(--color-primary);
-      min-height: 46px;
-      padding: 12px;
-      border-radius: var(--radius-sm);
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .alert-btn:hover { background: var(--color-primary-hover); }
+    .animate-pulse { animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
 </head>
-<body onclick="dismissKeyboard(event)">
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen">
+  <div id="root"></div>
 
-  <header>
-    <h1>地域ボランティア募集 掲示板</h1>
-    <p>手助けを必要としている地域の依頼一覧です</p>
-  </header>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
 
-  <div class="auth-panel" id="auth-panel">
-    <div id="auth-logged-in-view" class="auth-logged-in" style="display:none;">
-      <div>
-        <span id="auth-vol-display"></span>
-      </div>
-      <div class="auth-logged-in-actions">
-        <button type="button" class="btn-report-manual" onclick="openQuestNumberSelectModal()">📋 完了報告</button>
-        <button type="button" class="btn-reset-auth" onclick="logoutVolunteer()">再設定</button>
-      </div>
-    </div>
-
-    <div id="auth-login-view" class="auth-login-form">
-      <div class="auth-form-title">
-        ボランティア認証（登録番号・電話番号下4桁）
-      </div>
-      <div class="auth-inputs-row">
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-no" class="auth-input-no" placeholder="001" maxlength="4" aria-label="登録番号">
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="login-vol-phone4" class="auth-input-phone" placeholder="電話下4桁" maxlength="4" aria-label="電話番号下4桁">
-      </div>
-      <div class="auth-buttons-row">
-        <button type="button" class="btn-login-large" id="btn-login-submit" onclick="submitLogin()">認証・ログイン</button>
-        <button type="button" class="btn-to-reg-large" onclick="openRegisterModal()">新規登録</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div id="loading" class="loading" style="display:none;">最新の募集情報を読み込み中...</div>
-    <div id="quest-list">
-      <div class="unauth-placeholder" id="unauth-placeholder">
-        <span class="lock-icon" aria-hidden="true">🔒</span>
-        <h3>ボランティア認証が必要です</h3>
-        <p>画面上部の入力欄に「登録番号」と「電話番号下4桁」を入力して<br>「認証・ログイン」を行うと、募集中の依頼一覧が表示されます。</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 新規登録モーダル -->
-  <div id="register-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reg-title">
-    <div class="modal">
-      <h2 id="reg-title">新規ボランティア利用登録</h2>
-      <p style="font-size:0.92rem; color:var(--color-text-secondary); margin-bottom:14px;">
-        お名前と電話番号を入力するだけで、専用番号の発行とLINE連携が自動で完了します。
-      </p>
-      <div class="form-group">
-        <label for="reg-name">お名前（本名・必須）</label>
-        <input type="text" id="reg-name" placeholder="例：地域 太郎" required>
-      </div>
-      <div class="form-group">
-        <label for="reg-phone">お電話番号（必須）</label>
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="reg-phone" placeholder="例：09012345678" required>
-      </div>
-      <div class="notice-box">
-        ※登録完了後、自動であなた専用のLINE連携が行われます。
-      </div>
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" onclick="closeRegisterModal()">戻る</button>
-        <button type="button" class="btn-submit" id="btn-submit-reg" onclick="submitRegistration()">登録を完了する</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 立候補確認モーダル -->
-  <div id="apply-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-task-title">
-    <div class="modal">
-      <h2 id="modal-task-title">ボランティアに立候補する</h2>
-      <input type="hidden" id="modal-quest-id">
-
-      <div style="background:#f1f3f5; padding:12px 14px; border-radius:var(--radius-sm); margin-bottom:14px; font-size:0.98rem; border-left:4px solid var(--color-primary);">
-        <div style="margin-bottom:4px;"><strong>登録番号：</strong><span id="apply-vol-no"></span></div>
-        <div><strong>お名前：</strong><span id="apply-vol-name"></span> 様</div>
-      </div>
-
-      <div class="notice-box">
-        ※確定すると受付が完了し、公式LINEのトーク画面へ<strong>「依頼者のお名前・電話番号・集合場所・事前資料」</strong>が自動送信されます。
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" onclick="closeApplyModal()">キャンセル</button>
-        <button type="button" class="btn-submit" id="btn-submit-apply" onclick="submitApplication()">立候補を確定する</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- クエスト番号入力モーダル -->
-  <div id="quest-number-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="quest-num-title">
-    <div class="modal">
-      <h2 id="quest-num-title">📋 完了報告する案件番号</h2>
-      <p style="font-size:0.92rem; color:var(--color-text-secondary); margin-bottom:14px;">
-        報告を行う募集番号の「数字」を入力してください。
-      </p>
-
-      <div class="form-group">
-        <label for="manual-quest-num">クエスト番号</label>
-        <div class="quest-input-box">
-          <span class="quest-prefix">V-</span>
-          <input type="tel" inputmode="numeric" pattern="[0-9]*" id="manual-quest-num" class="quest-num-input" placeholder="001" maxlength="4">
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" onclick="closeQuestNumberModal()">キャンセル</button>
-        <button type="button" class="btn-submit" onclick="proceedToReportModal()">次へ（アンケート開く）</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 活動完了報告アンケートモーダル -->
-  <div id="report-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
-    <div class="modal">
-      <h2 id="report-modal-title">🍀 活動完了報告アンケート</h2>
-      <p style="font-size:0.92rem; color:var(--color-text-secondary); margin-bottom:14px;">
-        本日の活動お疲れ様でした！1分程度で状況をお知らせください。
-      </p>
-
-      <div class="form-group">
-        <label for="report-quest-id">対象案件</label>
-        <input type="text" id="report-quest-id" readonly style="background:#f1f3f5; font-weight:bold; font-size:1.1rem; color:var(--color-text-primary);">
-      </div>
-
-      <div class="form-group">
-        <label for="report-status">Q1. 活動の実施状況（必須）</label>
-        <select id="report-status">
-          <option value="無事完了">🟢 無事に完了した</option>
-          <option value="一部課題あり">🟡 一部課題・やり残しあり</option>
-          <option value="未実施・中止">🔴 実施できなかった・中止</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="report-mood">Q2. 現場や依頼者様の雰囲気（必須）</label>
-        <select id="report-mood">
-          <option value="とても良かった">とても良かった（大変喜ばれた）</option>
-          <option value="普通">普通（問題なく活動できた）</option>
-          <option value="少し困ったことがあった">少し困ったことがあった</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="report-notes">Q3. 事務局への連絡事項・特記事項（任意）</label>
-        <textarea id="report-notes" rows="2" placeholder="気になる点があればご記入ください"></textarea>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" onclick="closeReportModal()">閉じる</button>
-        <button type="button" class="btn-submit" id="btn-submit-report" onclick="submitReportAction()">報告を送信する</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- カスタム通知モーダル -->
-  <div id="custom-alert-modal" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="custom-alert-title">
-    <div class="modal custom-alert-box">
-      <span class="alert-icon" id="custom-alert-icon" aria-hidden="true">✨</span>
-      <div class="alert-title" id="custom-alert-title">お知らせ</div>
-      <div class="alert-body" id="custom-alert-body"></div>
-      <button type="button" class="alert-btn" id="custom-alert-btn" onclick="closeCustomAlert()">とじる</button>
-    </div>
-  </div>
-
-  <script>
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    // ★ご自身のGASウェブアプリURL（末尾 /exec）
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
 
-    let currentLineUserId = "";
-    let currentLineDisplayName = "";
-    let currentVolunteer = null;
-    let customAlertCallback = null;
+    // --- Lucide アイコン ラッパーコンポーネント ---
+    const Icon = ({ name, size = 18, className = "" }) => {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [name]);
+      return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[1.75] ${className}`}></i>;
+    };
 
-    document.addEventListener("DOMContentLoaded", function() {
-      initLiffSafely();
-      handleInitialAuthAndReport();
-    });
+    // --- メインアプリケーション ---
+    function App() {
+      const [quests, setQuests] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [authVolunteer, setAuthVolunteer] = useState(null);
+      const [lineUser, setLineUser] = useState({ id: "", name: "" });
+      
+      // 画面状態
+      const [currentView, setCurrentView] = useState("list"); // "list" | "detail"
+      const [selectedQuest, setSelectedQuest] = useState(null);
 
-    async function callGasApi(payload) {
-      try {
+      // モーダル・シート状態
+      const [showRegisterModal, setShowRegisterModal] = useState(false);
+      const [showApplyModal, setShowApplyModal] = useState(false);
+      const [showApplicantsSheet, setShowApplicantsSheet] = useState(false);
+      const [sheetQuest, setSheetQuest] = useState(null);
+      const [showReportModal, setShowReportModal] = useState(false);
+      const [reportQuestId, setReportQuestId] = useState("");
+
+      // フォーム状態
+      const [loginNo, setLoginNo] = useState("");
+      const [loginPhone4, setLoginPhone4] = useState("");
+      const [regName, setRegName] = useState("");
+      const [regPhone, setRegPhone] = useState("");
+      const [isSubmitting, setIsSubmitting] = useState(false);
+
+      // トースト通知状態
+      const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+
+      const showToast = (message, type = "info") => {
+        setToast({ show: true, message, type });
+        setTimeout(() => {
+          setToast({ show: false, message: "", type: "info" });
+        }, 4000);
+      };
+
+      // API通信ラッパー
+      const callApi = async (payload) => {
         const parts = [];
         for (const key in payload) {
           if (Object.prototype.hasOwnProperty.call(payload, key)) {
@@ -791,507 +105,722 @@
             }
           }
         }
-
         const url = GAS_API_URL + (GAS_API_URL.includes("?") ? "&" : "?") + parts.join("&");
-
-        const response = await fetch(url, {
-          method: "GET"
-        });
-
-        if (!response.ok) {
-          throw new Error("HTTPエラー (" + response.status + ")");
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.error || "処理に失敗しました。");
-        }
+        const res = await fetch(url, { method: "GET" });
+        if (!res.ok) throw new Error(`通信エラー (${res.status})`);
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error || "処理に失敗しました。");
         return result.data;
-      } catch (err) {
-        if (err.message === "Load failed" || err.message === "Failed to fetch") {
-          throw new Error("サーバー通信に失敗しました。GASの公開権限が「全員」になっているかご確認ください。");
-        }
-        throw err;
-      }
-    }
+      };
 
-    async function handleInitialAuthAndReport() {
-      const urlParams = new URLSearchParams(window.location.search);
-      let hashParams = new URLSearchParams();
-      if (window.location.hash) {
-        const hashStr = window.location.hash.substring(1);
-        hashParams = new URLSearchParams(hashStr.includes("?") ? hashStr.split("?")[1] : hashStr);
-      }
-
-      const reportReqId = urlParams.get("report") || hashParams.get("report");
-      const urlVolNo = urlParams.get("vol") || hashParams.get("vol");
-      const urlPhone4 = urlParams.get("p") || hashParams.get("p");
-
-      if (urlVolNo && urlPhone4) {
-        document.getElementById("login-vol-no").value = urlVolNo;
-        document.getElementById("login-vol-phone4").value = urlPhone4;
-        await submitLogin(true);
-      } else {
-        restoreSavedAuth();
-      }
-
-      if (reportReqId) {
-        const cleanDigits = reportReqId.replace(/[^0-9]/g, "");
-        const formattedId = cleanDigits ? "V-" + cleanDigits.padStart(3, "0") : reportReqId;
-        
-        document.getElementById("report-quest-id").value = formattedId;
-        setTimeout(() => {
-          if (document.activeElement) document.activeElement.blur();
-          document.getElementById("report-modal").style.display = "flex";
-        }, 400);
-      }
-    }
-
-    function showCustomAlert(title, message, iconType = "success", callback = null) {
-      if (document.activeElement) document.activeElement.blur();
-      
-      const modal = document.getElementById("custom-alert-modal");
-      const titleEl = document.getElementById("custom-alert-title");
-      const bodyEl = document.getElementById("custom-alert-body");
-      const iconEl = document.getElementById("custom-alert-icon");
-
-      titleEl.innerText = title;
-      bodyEl.innerText = message;
-      customAlertCallback = callback;
-
-      if (iconType === "success") {
-        iconEl.innerText = "✅";
-      } else if (iconType === "error") {
-        iconEl.innerText = "⚠️";
-      } else {
-        iconEl.innerText = "📢";
-      }
-
-      modal.style.display = "flex";
-    }
-
-    function closeCustomAlert() {
-      document.getElementById("custom-alert-modal").style.display = "none";
-      if (typeof customAlertCallback === "function") {
-        const cb = customAlertCallback;
-        customAlertCallback = null;
-        cb();
-      }
-    }
-
-    function dismissKeyboard(e) {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "SELECT") {
-        if (document.activeElement && typeof document.activeElement.blur === "function") {
-          document.activeElement.blur();
-        }
-      }
-    }
-
-    function initLiffSafely() {
-      if (typeof liff === "undefined" || !MY_LIFF_ID || MY_LIFF_ID.trim() === "") return;
-
-      liff.init({ liffId: MY_LIFF_ID })
-        .then(() => {
-          try {
-            const idToken = liff.getDecodedIDToken();
-            if (idToken && idToken.sub && idToken.sub.startsWith("U")) {
-              currentLineUserId = idToken.sub;
-            }
-          } catch(e) {}
-
-          if (liff.isLoggedIn()) {
-            liff.getProfile().then(profile => {
-              if (profile.userId && profile.userId.startsWith("U")) {
-                currentLineUserId = profile.userId;
-              }
-              currentLineDisplayName = profile.displayName || "";
-            }).catch(() => {});
-          }
-        })
-        .catch(err => {
-          console.error("LIFF Init Error: ", err);
-        });
-    }
-
-    function openQuestNumberSelectModal() {
-      if (!currentVolunteer) {
-        showCustomAlert("認証が必要です", "報告を行う前に、画面上部で登録番号とお電話番号の下4桁を入力してログインしてください。", "error", () => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        return;
-      }
-      const modal = document.getElementById("quest-number-modal");
-      const input = document.getElementById("manual-quest-num");
-      input.value = "";
-      modal.style.display = "flex";
-
-      setTimeout(() => {
-        input.focus();
-      }, 200);
-    }
-
-    function closeQuestNumberModal() {
-      if (document.activeElement) document.activeElement.blur();
-      document.getElementById("quest-number-modal").style.display = "none";
-    }
-
-    function proceedToReportModal() {
-      const inputVal = document.getElementById("manual-quest-num").value.trim();
-      const digits = inputVal.replace(/[^0-9]/g, "");
-
-      if (!digits) {
-        showCustomAlert("入力エラー", "番号の数字（例: 001 や 1）を入力してください。", "error");
-        return;
-      }
-
-      if (document.activeElement) document.activeElement.blur();
-      
-      const fullReqId = "V-" + digits.padStart(3, "0");
-      document.getElementById("report-quest-id").value = fullReqId;
-      closeQuestNumberModal();
-
-      setTimeout(() => {
-        document.getElementById("report-modal").style.display = "flex";
-      }, 200);
-    }
-
-    function closeReportModal() {
-      if (document.activeElement) document.activeElement.blur();
-      document.getElementById("report-modal").style.display = "none";
-    }
-
-    async function submitReportAction() {
-      if (!currentVolunteer) {
-        showCustomAlert("認証エラー", "認証が確認できません。再度ログインしてください。", "error");
-        closeReportModal();
-        return;
-      }
-
-      if (document.activeElement) document.activeElement.blur();
-
-      const reqId = document.getElementById("report-quest-id").value;
-      const status = document.getElementById("report-status").value;
-      const mood = document.getElementById("report-mood").value;
-      const notes = document.getElementById("report-notes").value.trim();
-
-      const btn = document.getElementById("btn-submit-report");
-      btn.innerText = "送信中...";
-      btn.disabled = true;
-
-      try {
-        await callGasApi({
-          action: "submitReport",
-          reqId: reqId,
-          volunteerNo: currentVolunteer.volunteerNo,
-          status: status,
-          mood: mood,
-          notes: notes
-        });
-
-        closeReportModal();
-        btn.innerText = "報告を送信する";
-        btn.disabled = false;
-
-        showCustomAlert(
-          "報告完了！", 
-          "完了報告アンケートを受付ました。\n活動への温かいご協力、誠にありがとうございました！🍀", 
-          "success", 
-          () => {
-            if (typeof liff !== "undefined" && liff.isInClient()) {
-              liff.closeWindow();
-            } else {
-              fetchQuests();
-            }
-          }
-        );
-      } catch (err) {
-        btn.innerText = "報告を送信する";
-        btn.disabled = false;
-        showCustomAlert("報告エラー", err.message, "error");
-      }
-    }
-
-    function restoreSavedAuth() {
-      const savedNo = localStorage.getItem("saved_vol_no");
-      const savedPhone4 = localStorage.getItem("saved_vol_phone4");
-
-      if (savedNo && savedPhone4) {
-        document.getElementById("login-vol-no").value = savedNo;
-        document.getElementById("login-vol-phone4").value = savedPhone4;
-        submitLogin(true);
-      }
-    }
-
-    async function submitLogin(isSilent) {
-      if (document.activeElement) document.activeElement.blur();
-
-      const no = document.getElementById("login-vol-no").value.trim();
-      const phone4 = document.getElementById("login-vol-phone4").value.trim();
-
-      if (!no || !phone4) {
-        if (!isSilent) showCustomAlert("入力不足", "登録番号とお電話番号の下4桁を入力してください。", "error");
-        return;
-      }
-
-      const btn = document.getElementById("btn-login-submit");
-      if (!isSilent) {
-        btn.innerText = "...";
-        btn.disabled = true;
-      }
-
-      try {
-        const res = await callGasApi({
-          action: "login",
-          volunteerNo: no,
-          phoneLast4: phone4,
-          lineUserId: currentLineUserId || ""
-        });
-
-        currentVolunteer = res;
-        localStorage.setItem("saved_vol_no", res.volunteerNo);
-        localStorage.setItem("saved_vol_phone4", res.phoneLast4);
-
-        document.getElementById("auth-login-view").style.display = "none";
-        document.getElementById("auth-logged-in-view").style.display = "flex";
-        document.getElementById("auth-vol-display").innerText = `認証完了: [${res.volunteerNo}] ${res.name} 様`;
-
-        if (!isSilent) {
-          showCustomAlert(
-            "認証完了",
-            `ボランティア番号：【 ${res.volunteerNo} 】\n${res.name} 様としてログインしました。\n\n募集中の依頼一覧を表示します。`,
-            "success"
-          );
-        }
-
-        fetchQuests();
-
-      } catch (err) {
-        if (!isSilent) showCustomAlert("認証エラー", err.message, "error");
-        if (isSilent) {
-          localStorage.removeItem("saved_vol_no");
-          localStorage.removeItem("saved_vol_phone4");
-        }
-      } finally {
-        btn.innerText = "認証・ログイン";
-        btn.disabled = false;
-      }
-    }
-
-    function logoutVolunteer() {
-      localStorage.removeItem("saved_vol_no");
-      localStorage.removeItem("saved_vol_phone4");
-      currentVolunteer = null;
-      document.getElementById("auth-logged-in-view").style.display = "none";
-      document.getElementById("auth-login-view").style.display = "flex";
-
-      const container = document.getElementById("quest-list");
-      container.innerHTML = `
-        <div class="unauth-placeholder" id="unauth-placeholder">
-          <span class="lock-icon" aria-hidden="true">🔒</span>
-          <h3>ボランティア認証が必要です</h3>
-          <p>画面上部の入力欄に「登録番号」と「電話番号下4桁」を入力して<br>「認証・ログイン」を行うと、募集中の依頼一覧が表示されます。</p>
-        </div>
-      `;
-    }
-
-    function openRegisterModal() {
-      const regName = document.getElementById("reg-name");
-      if (regName && currentLineDisplayName && !regName.value) {
-        regName.value = currentLineDisplayName;
-      }
-      document.getElementById("register-modal").style.display = "flex";
-    }
-
-    function closeRegisterModal() {
-      if (document.activeElement) document.activeElement.blur();
-      document.getElementById("register-modal").style.display = "none";
-    }
-
-    async function submitRegistration() {
-      if (document.activeElement) document.activeElement.blur();
-
-      const name = document.getElementById("reg-name").value.trim();
-      const phone = document.getElementById("reg-phone").value.trim();
-
-      if (!name || !phone) {
-        showCustomAlert("入力エラー", "お名前とお電話番号を両方入力してください。", "error");
-        return;
-      }
-
-      if (!currentLineUserId && typeof liff !== "undefined" && liff.isLoggedIn()) {
+      // 募集一覧取得
+      const fetchQuests = async () => {
+        setLoading(true);
         try {
-          const profile = await liff.getProfile();
-          if (profile && profile.userId) currentLineUserId = profile.userId;
-        } catch(e) {}
-      }
-
-      const btn = document.getElementById("btn-submit-reg");
-      btn.innerText = "登録中...";
-      btn.disabled = true;
-
-      try {
-        const res = await callGasApi({
-          action: "register",
-          lineUserId: currentLineUserId || "未取得",
-          lineDisplayName: currentLineDisplayName || name,
-          name: name,
-          phone: phone
-        });
-
-        const phoneLast4 = res.phoneLast4;
-        document.getElementById("login-vol-no").value = res.volunteerNo;
-        document.getElementById("login-vol-phone4").value = phoneLast4;
-        closeRegisterModal();
-
-        if (currentLineUserId && currentLineUserId.startsWith("U")) {
-          showCustomAlert(
-            "登録＆連携完了！",
-            `ボランティア登録番号：【 ${res.volunteerNo} 】\n\nLINEアカウントとの自動連携が完了しました！\nトーク画面での番号送信は不要です。このまま募集一覧をご覧ください。`,
-            "success",
-            () => {
-              submitLogin(true);
-            }
-          );
-        } else {
-          showCustomAlert(
-            "登録完了！",
-            `あなた専用のボランティア登録番号は\n【 ${res.volunteerNo} 】です。\n\n※LINE通知を有効化するには、公式LINEトークに『 ${res.volunteerNo} ${phoneLast4} 』と送信してください。`,
-            "success",
-            () => {
-              submitLogin(true);
-            }
-          );
+          const data = await callApi({ action: "getOpenQuests" });
+          setQuests(data || []);
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setLoading(false);
         }
+      };
 
-      } catch (err) {
-        showCustomAlert("登録エラー", err.message, "error");
-      } finally {
-        btn.innerText = "登録を完了する";
-        btn.disabled = false;
-      }
-    }
-
-    async function fetchQuests() {
-      const loadingEl = document.getElementById("loading");
-      const container = document.getElementById("quest-list");
-      
-      loadingEl.style.display = "block";
-      container.innerHTML = "";
-
-      try {
-        const res = await callGasApi({ action: "getOpenQuests" });
-        renderQuests(res);
-      } catch (err) {
-        loadingEl.style.display = "none";
-        container.innerHTML = `<div class="card" style="text-align:center; color:var(--color-status-error-text); font-size:1rem; font-weight:bold;">読み込みエラー: ${err.message}</div>`;
-      }
-    }
-
-    function renderQuests(quests) {
-      document.getElementById("loading").style.display = "none";
-      const container = document.getElementById("quest-list");
-      container.innerHTML = "";
-
-      if (!quests || quests.length === 0) {
-        container.innerHTML = '<div class="card" style="text-align:center; color:var(--color-text-secondary); font-size:1rem; padding:32px;">現在募集中のボランティア依頼はありません。</div>';
-        return;
-      }
-
-      quests.forEach(q => {
-        const card = document.createElement("div");
-        card.className = "card";
-
-        let briefingHtml = "";
-        if (q.briefingUrl) {
-          briefingHtml = `
-            <div class="briefing-link-box">
-              <a href="${q.briefingUrl}" target="_blank" rel="noopener noreferrer">
-                📄 事前ブリーフィング資料・現場写真を確認 ↗
-              </a>
-            </div>
-          `;
+      // ログイン処理
+      const handleLogin = async (no, phone4, isSilent = false) => {
+        if (!no || !phone4) {
+          if (!isSilent) showToast("登録番号と電話番号下4桁を入力してください。", "error");
+          return;
         }
-
-        card.innerHTML = `
-          <div class="card-header">
-            <div class="card-title">${q.task}</div>
-            <div class="badge">あと ${q.remaining}名（定員${q.capacity}名）</div>
-          </div>
-          <div class="card-row"><strong>日時</strong><span>${q.date} ${q.time}〜</span></div>
-          <div class="card-row"><strong>場所</strong><span>${q.location}</span></div>
-          <div class="card-row"><strong>備考</strong><span>${q.notes || "特になし"}</span></div>
-          ${briefingHtml}
-          <button class="apply-btn" onclick="handleApplyClick('${q.id}', '${q.task}')">立候補する</button>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function handleApplyClick(id, title) {
-      if (document.activeElement) document.activeElement.blur();
-
-      if (!currentVolunteer) {
-        showCustomAlert("認証が必要です", "立候補する前に、画面上部で登録番号とお電話番号下4桁を入力してログインしてください。", "error", () => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        return;
-      }
-
-      document.getElementById("modal-quest-id").value = id;
-      document.getElementById("modal-task-title").innerText = `「${title}」に立候補`;
-      document.getElementById("apply-vol-no").innerText = currentVolunteer.volunteerNo;
-      document.getElementById("apply-vol-name").innerText = currentVolunteer.name;
-
-      document.getElementById("apply-modal").style.display = "flex";
-    }
-
-    function closeApplyModal() {
-      if (document.activeElement) document.activeElement.blur();
-      document.getElementById("apply-modal").style.display = "none";
-    }
-
-    async function submitApplication() {
-      if (document.activeElement) document.activeElement.blur();
-
-      const id = document.getElementById("modal-quest-id").value;
-      const submitBtn = document.getElementById("btn-submit-apply");
-      submitBtn.innerText = "送信中...";
-      submitBtn.disabled = true;
-
-      const applicantName = `[${currentVolunteer.volunteerNo}] ${currentVolunteer.name}`;
-
-      try {
-        await callGasApi({
-          action: "apply",
-          reqId: id,
-          volunteerNo: currentVolunteer.volunteerNo,
-          applicantName: applicantName,
-          applicantContact: currentVolunteer.phone || ""
-        });
-
-        closeApplyModal();
-
-        showCustomAlert(
-          "立候補完了！",
-          "ボランティアの立候補を受け付けました。\n公式LINEのトーク画面へ詳細情報をお送りしましたのでご確認ください！",
-          "success",
-          () => {
-            if (typeof liff !== "undefined" && liff.isInClient()) {
-              liff.closeWindow();
-            } else {
-              document.getElementById("loading").style.display = "block";
-              document.getElementById("quest-list").innerHTML = "";
-              fetchQuests();
-            }
+        setIsSubmitting(true);
+        try {
+          const res = await callApi({
+            action: "login",
+            volunteerNo: no,
+            phoneLast4: phone4,
+            lineUserId: lineUser.id || ""
+          });
+          setAuthVolunteer(res);
+          localStorage.setItem("saved_vol_no", res.volunteerNo);
+          localStorage.setItem("saved_vol_phone4", res.phoneLast4);
+          if (!isSilent) showToast(`${res.name} 様として認証しました。`, "success");
+          fetchQuests();
+        } catch (err) {
+          if (!isSilent) showToast(err.message, "error");
+          if (isSilent) {
+            localStorage.removeItem("saved_vol_no");
+            localStorage.removeItem("saved_vol_phone4");
           }
-        );
-      } catch (err) {
-        showCustomAlert("受付エラー", err.message, "error");
-      } finally {
-        submitBtn.innerText = "立候補を確定する";
-        submitBtn.disabled = false;
-      }
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleLogout = () => {
+        localStorage.removeItem("saved_vol_no");
+        localStorage.removeItem("saved_vol_phone4");
+        setAuthVolunteer(null);
+        setQuests([]);
+        setCurrentView("list");
+        showToast("認証を解除しました。", "info");
+      };
+
+      // 新規登録処理
+      const handleRegister = async () => {
+        if (!regName.trim() || !regPhone.trim()) {
+          showToast("お名前とお電話番号を入力してください。", "error");
+          return;
+        }
+        setIsSubmitting(true);
+        try {
+          const res = await callApi({
+            action: "register",
+            lineUserId: lineUser.id || "未取得",
+            lineDisplayName: lineUser.name || regName.trim(),
+            name: regName.trim(),
+            phone: regPhone.trim()
+          });
+          setShowRegisterModal(false);
+          setLoginNo(res.volunteerNo);
+          setLoginPhone4(res.phoneLast4);
+          showToast(`登録完了：登録番号は【${res.volunteerNo}】です。`, "success");
+          handleLogin(res.volunteerNo, res.phoneLast4, true);
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      // 立候補処理
+      const handleApply = async () => {
+        if (!selectedQuest || !authVolunteer) return;
+        setIsSubmitting(true);
+        try {
+          await callApi({
+            action: "apply",
+            reqId: selectedQuest.id,
+            volunteerNo: authVolunteer.volunteerNo,
+            applicantName: `[${authVolunteer.volunteerNo}] ${authVolunteer.name}`,
+            applicantContact: authVolunteer.phone || ""
+          });
+          setShowApplyModal(false);
+          showToast("立候補を受け付けました。LINEトークをご確認ください。", "success");
+          fetchQuests();
+          setCurrentView("list");
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      // 完了報告アンケート送信
+      const handleReportSubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        setIsSubmitting(true);
+        try {
+          await callApi({
+            action: "submitReport",
+            reqId: reportQuestId,
+            volunteerNo: authVolunteer.volunteerNo,
+            status: fd.get("status"),
+            mood: fd.get("mood"),
+            notes: fd.get("notes") || ""
+          });
+          setShowReportModal(false);
+          showToast("完了報告を送信しました。ありがとうございました。", "success");
+          if (window.liff && window.liff.isInClient()) {
+            window.liff.closeWindow();
+          } else {
+            fetchQuests();
+          }
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      // 初期化（LIFF & URLパラメータ判定）
+      useEffect(() => {
+        if (typeof liff !== "undefined" && MY_LIFF_ID) {
+          liff.init({ liffId: MY_LIFF_ID }).then(() => {
+            if (liff.isLoggedIn()) {
+              liff.getProfile().then(p => {
+                setLineUser({ id: p.userId, name: p.displayName });
+              }).catch(() => {});
+            }
+          }).catch(console.error);
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const report = params.get("report");
+        const vol = params.get("vol");
+        const p = params.get("p");
+
+        if (vol && p) {
+          setLoginNo(vol);
+          setLoginPhone4(p);
+          handleLogin(vol, p, true);
+        } else {
+          const sNo = localStorage.getItem("saved_vol_no");
+          const sP4 = localStorage.getItem("saved_vol_phone4");
+          if (sNo && sP4) {
+            setLoginNo(sNo);
+            setLoginPhone4(sP4);
+            handleLogin(sNo, sP4, true);
+          }
+        }
+
+        if (report) {
+          const cleanDigits = report.replace(/[^0-9]/g, "");
+          setReportQuestId(cleanDigits ? `V-${cleanDigits.padStart(3, "0")}` : report);
+          setShowReportModal(true);
+        }
+      }, []);
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          {/* スティッキーヘッダー */}
+          <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
+            <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold">
+                  <Icon name="hand-heart" size={18} className="text-white" />
+                </div>
+                <h1 className="font-bold text-slate-800 text-base tracking-tight">地域ボランティア募集</h1>
+              </div>
+
+              {authVolunteer && (
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      const num = prompt("報告する募集番号の数字を入力してください（例: 001）");
+                      if (num) {
+                        const clean = num.replace(/[^0-9]/g, "").padStart(3, "0");
+                        setReportQuestId(`V-${clean}`);
+                        setShowReportModal(true);
+                      }
+                    }}
+                    className="text-xs px-2.5 py-1.5 font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1 transition"
+                  >
+                    <Icon name="file-check" size={14} />
+                    <span>完了報告</span>
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="text-xs px-2 py-1.5 font-medium text-slate-500 hover:text-slate-800 transition"
+                  >
+                    再設定
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* メインコンテナ */}
+          <main className="flex-1 max-w-2xl w-full mx-auto p-4 space-y-4">
+            
+            {/* 認証ステータス / ログインカード */}
+            {!authVolunteer ? (
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                    <Icon name="shield-check" size={16} className="text-brand-600" />
+                    <span>ボランティア認証</span>
+                  </h2>
+                  <span className="text-xs text-slate-500">登録済み番号でログイン</span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  <input
+                    type="tel"
+                    maxLength={4}
+                    value={loginNo}
+                    onChange={(e) => setLoginNo(e.target.value)}
+                    placeholder="登録番号 (001)"
+                    className="col-span-2 px-3 py-2 text-center text-sm font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                  <input
+                    type="tel"
+                    maxLength={4}
+                    value={loginPhone4}
+                    onChange={(e) => setLoginPhone4(e.target.value)}
+                    placeholder="電話番号下4桁"
+                    className="col-span-3 px-3 py-2 text-center text-sm font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    disabled={isSubmitting}
+                    onClick={() => handleLogin(loginNo, loginPhone4)}
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <Icon name="log-in" size={16} />
+                    <span>{isSubmitting ? "認証中..." : "認証・一覧を表示"}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowRegisterModal(true)}
+                    className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-lg transition"
+                  >
+                    新規登録
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 flex items-center justify-between text-xs text-brand-700 font-medium">
+                <div className="flex items-center gap-1.5">
+                  <Icon name="user-check" size={15} className="text-brand-600" />
+                  <span>認証中: <strong>[{authVolunteer.volunteerNo}] {authVolunteer.name} 様</strong></span>
+                </div>
+                <span className="bg-white border border-brand-200 text-brand-700 px-2 py-0.5 rounded-full text-[11px]">認証済み</span>
+              </div>
+            )}
+
+            {/* パンくずリスト（詳細表示時のみ） */}
+            {currentView === "detail" && (
+              <nav className="flex items-center gap-1.5 text-xs text-slate-500 py-1">
+                <button onClick={() => setCurrentView("list")} className="hover:text-slate-800 flex items-center gap-1">
+                  <Icon name="arrow-left" size={14} />
+                  <span>募集一覧</span>
+                </button>
+                <span>/</span>
+                <span className="text-slate-800 font-medium truncate max-w-[200px]">{selectedQuest?.task}</span>
+              </nav>
+            )}
+
+            {/* コンテンツ描画エリア */}
+            {!authVolunteer ? (
+              /* 未認証時プレースホルダー */
+              <div className="bg-white border border-slate-200 rounded-xl p-8 text-center space-y-2">
+                <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                  <Icon name="lock" size={22} />
+                </div>
+                <h3 className="font-bold text-slate-700 text-sm">認証が必要です</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  プライバシー保護のため、ボランティア認証を行うと<br />現在募集中の案件詳細が表示されます。
+                </p>
+              </div>
+            ) : loading ? (
+              /* スケルトンスクリーン */
+              <div className="space-y-3">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 animate-pulse">
+                    <div className="flex justify-between items-start">
+                      <div className="h-5 bg-slate-200 rounded w-2/3"></div>
+                      <div className="h-5 bg-slate-200 rounded w-16"></div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                      <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    </div>
+                    <div className="h-9 bg-slate-200 rounded w-full pt-2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : currentView === "list" ? (
+              /* 募集一覧ビュー */
+              <div className="space-y-3">
+                {quests.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+                    現在募集中の活動依頼はありません。
+                  </div>
+                ) : (
+                  quests.map((q) => {
+                    const remaining = q.capacity - q.current;
+                    const isFull = remaining <= 0;
+                    return (
+                      <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-slate-300 transition space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 
+                            onClick={() => { setSelectedQuest(q); setCurrentView("detail"); }}
+                            className="font-bold text-slate-900 text-base leading-snug hover:text-brand-600 cursor-pointer flex-1"
+                          >
+                            {q.task}
+                          </h3>
+                          
+                          {/* ★定員タップで立候補者シート展開 & 重複表現の是正 */}
+                          <button
+                            onClick={() => { setSheetQuest(q); setShowApplicantsSheet(true); }}
+                            className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 transition ${
+                              isFull 
+                                ? "bg-slate-100 text-slate-600 border-slate-200" 
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            }`}
+                          >
+                            <Icon name="users" size={13} />
+                            <span>
+                              {isFull ? "定員成立" : `残り ${remaining}名 / 定員 ${q.capacity}名`}
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1 font-semibold text-slate-500 w-12 shrink-0">
+                              <Icon name="calendar" size={13} /> 日時
+                            </span>
+                            <span>{q.date} {q.time}〜</span>
+                          </div>
+                          
+                          {/* ★場所 & Google Mapsリンク */}
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1 font-semibold text-slate-500 w-12 shrink-0">
+                              <Icon name="map-pin" size={13} /> 場所
+                            </span>
+                            <span className="truncate flex-1">{q.location}</span>
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q.location)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-brand-700 hover:text-brand-800 font-medium underline flex items-center gap-0.5 shrink-0"
+                            >
+                              <span>地図</span>
+                              <Icon name="external-link" size={11} />
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="pt-1 flex gap-2">
+                          <button
+                            onClick={() => { setSelectedQuest(q); setCurrentView("detail"); }}
+                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1"
+                          >
+                            <span>詳細を見る</span>
+                            <Icon name="chevron-right" size={14} />
+                          </button>
+
+                          <button
+                            disabled={isFull}
+                            onClick={() => { setSelectedQuest(q); setShowApplyModal(true); }}
+                            className={`flex-1 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1 ${
+                              isFull 
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                                : "bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
+                            }`}
+                          >
+                            <Icon name="check" size={14} />
+                            <span>立候補する</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              /* ★詳細ページ（新設） */
+              selectedQuest && (
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{selectedQuest.id}</span>
+                      <h2 className="text-lg font-bold text-slate-900 mt-0.5">{selectedQuest.task}</h2>
+                    </div>
+                    <button
+                      onClick={() => { setSheetQuest(selectedQuest); setShowApplicantsSheet(true); }}
+                      className="text-xs px-2.5 py-1 rounded-full font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0"
+                    >
+                      残り {selectedQuest.capacity - selectedQuest.current}名 / 定員 {selectedQuest.capacity}名
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="w-16 font-semibold text-slate-500 flex items-center gap-1 shrink-0 pt-0.5">
+                        <Icon name="calendar" size={15} /> 日時
+                      </div>
+                      <div className="text-slate-800 font-medium">
+                        {selectedQuest.date} {selectedQuest.time}〜
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-16 font-semibold text-slate-500 flex items-center gap-1 shrink-0 pt-0.5">
+                        <Icon name="map-pin" size={15} /> 場所
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="text-slate-800 font-medium">{selectedQuest.location}</div>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedQuest.location)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-brand-700 hover:underline font-medium"
+                        >
+                          <Icon name="map" size={13} />
+                          <span>Google Mapsで地図を確認する</span>
+                          <Icon name="external-link" size={11} />
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-16 font-semibold text-slate-500 flex items-center gap-1 shrink-0 pt-0.5">
+                        <Icon name="info" size={15} /> 備考
+                      </div>
+                      <div className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">
+                        {selectedQuest.notes || "特記事項はありません。"}
+                      </div>
+                    </div>
+
+                    {selectedQuest.briefingUrl && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
+                          <Icon name="file-text" size={16} className="text-emerald-600" />
+                          <span>事前ブリーフィング資料・現場写真</span>
+                        </div>
+                        <a 
+                          href={selectedQuest.briefingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs bg-white border border-emerald-300 text-emerald-700 px-2.5 py-1 rounded font-medium hover:bg-emerald-100 flex items-center gap-1"
+                        >
+                          <span>閲覧</span>
+                          <Icon name="external-link" size={11} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 詳細ページ内の固定立候補アクション */}
+                  <div className="pt-4 border-t border-slate-100 flex gap-2">
+                    <button
+                      onClick={() => setCurrentView("list")}
+                      className="px-4 py-2.5 bg-slate-100 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-200 transition"
+                    >
+                      戻る
+                    </button>
+                    <button
+                      disabled={selectedQuest.capacity <= selectedQuest.current}
+                      onClick={() => setShowApplyModal(true)}
+                      className={`flex-1 font-semibold text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
+                        selectedQuest.capacity <= selectedQuest.current
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                          : "bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
+                      }`}
+                    >
+                      <Icon name="check" size={16} />
+                      <span>この活動に立候補する</span>
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </main>
+
+          {/* ★ボトムシート：現在の立候補者リスト */}
+          {showApplicantsSheet && sheetQuest && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-xl max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon name="users" size={18} className="text-brand-600" />
+                    <h3 className="font-bold text-slate-800 text-sm">現在の立候補者</h3>
+                  </div>
+                  <button onClick={() => setShowApplicantsSheet(false)} className="text-slate-400 hover:text-slate-600">
+                    <Icon name="x" size={18} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  <div className="text-xs text-slate-500 mb-2">
+                    案件：<strong>{sheetQuest.task}</strong>（定員 {sheetQuest.capacity}名）
+                  </div>
+
+                  {sheetQuest.applicants && sheetQuest.applicants.length > 0 ? (
+                    <ul className="divide-y divide-slate-100">
+                      {sheetQuest.applicants.map((name, idx) => (
+                        <li key={idx} className="py-2.5 flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-800">{name}</span>
+                          <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {idx === 0 ? "リーダー候補" : "参加予定"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-center py-6 text-xs text-slate-400">
+                      まだ立候補している方はいません。
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setShowApplicantsSheet(false)}
+                  className="w-full py-2.5 bg-slate-100 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-200 transition"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 新規登録モーダル */}
+          {showRegisterModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-slate-900 text-base">ボランティア新規利用登録</h3>
+                  <button onClick={() => setShowRegisterModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <Icon name="x" size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">お名前（本名）</label>
+                    <input
+                      type="text"
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      placeholder="例：地域 太郎"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">お電話番号</label>
+                    <input
+                      type="tel"
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      placeholder="例：09012345678"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setShowRegisterModal(false)}
+                    className="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-200 transition"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    disabled={isSubmitting}
+                    onClick={handleRegister}
+                    className="flex-1 py-2 bg-brand-600 text-white font-semibold text-xs rounded-lg hover:bg-brand-700 transition"
+                  >
+                    {isSubmitting ? "登録中..." : "登録して番号発行"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 立候補確認モーダル */}
+          {showApplyModal && selectedQuest && authVolunteer && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
+                <h3 className="font-bold text-slate-900 text-base">立候補の確認</h3>
+                
+                <div className="bg-slate-50 p-3 rounded-lg text-xs space-y-1 border border-slate-100">
+                  <div><strong>活動内容：</strong>{selectedQuest.task}</div>
+                  <div><strong>活動日時：</strong>{selectedQuest.date} {selectedQuest.time}〜</div>
+                  <div><strong>立候補者：</strong>[{authVolunteer.volunteerNo}] {authVolunteer.name} 様</div>
+                </div>
+
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  確定すると、LINEトーク画面へ当日の集合場所や依頼者の連絡先が自動送信されます。
+                </p>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setShowApplyModal(false)}
+                    className="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-200 transition"
+                  >
+                    戻る
+                  </button>
+                  <button
+                    disabled={isSubmitting}
+                    onClick={handleApply}
+                    className="flex-1 py-2 bg-brand-600 text-white font-semibold text-xs rounded-lg hover:bg-brand-700 transition"
+                  >
+                    {isSubmitting ? "送信中..." : "立候補を確定する"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 活動完了報告モーダル */}
+          {showReportModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
+                <h3 className="font-bold text-slate-900 text-base">活動完了報告</h3>
+                
+                <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">対象募集ID</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={reportQuestId}
+                      className="w-full px-3 py-1.5 bg-slate-100 border border-slate-200 rounded font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Q1. 実施状況</label>
+                    <select name="status" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                      <option value="無事完了">無事に完了した</option>
+                      <option value="一部課題あり">一部課題・やり残しあり</option>
+                      <option value="未実施・中止">実施できなかった・中止</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Q2. 現場の雰囲気</label>
+                    <select name="mood" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                      <option value="とても良かった">とても良かった（大変喜ばれた）</option>
+                      <option value="普通">普通（問題なく活動できた）</option>
+                      <option value="少し困ったことがあった">少し困ったことがあった</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">連絡事項・特記事項（任意）</label>
+                    <textarea name="notes" rows={2} placeholder="気付いた点など" className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs"></textarea>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowReportModal(false)}
+                      className="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg"
+                    >
+                      閉じる
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 py-2 bg-brand-600 text-white font-semibold text-xs rounded-lg hover:bg-brand-700"
+                    >
+                      {isSubmitting ? "送信中..." : "報告を送信"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* トースト通知 */}
+          {toast.show && (
+            <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-slate-900 text-white text-xs py-3 px-4 rounded-xl shadow-lg flex items-center justify-between gap-2 border border-slate-800 transition-all">
+              <span>{toast.message}</span>
+              <button onClick={() => setToast({ show: false, message: "", type: "info" })} className="text-slate-400 hover:text-white">
+                <Icon name="x" size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      );
     }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
