@@ -37,7 +37,7 @@
 
     // ★最新のGASウェブアプリURL
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
-    // ★事務局ログイン用パスコード（必要に応じて変更してください）
+    // ★事務局ログイン用パスコード
     const ADMIN_PASSCODE = "1234";
 
     const Icon = ({ name, size = 18, className = "" }) => {
@@ -48,6 +48,31 @@
       }, [name]);
       return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[2] ${className}`}></i>;
     };
+
+    /**
+     * 日付文字列（YYYY/MM/DD等）をタイムスタンプに変換
+     */
+    function parseDateToTime(dateStr) {
+      if (!dateStr) return 0;
+      const d = new Date(String(dateStr).replace(/-/g, "/"));
+      return isNaN(d.getTime()) ? 0 : d.getTime();
+    }
+
+    /**
+     * 今日から活動希望日までの残り日数を計算
+     */
+    function getDaysUntil(dateStr) {
+      if (!dateStr) return 999;
+      const act = new Date(String(dateStr).replace(/-/g, "/"));
+      if (isNaN(act.getTime())) return 999;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      act.setHours(0, 0, 0, 0);
+
+      const diffTime = act.getTime() - today.getTime();
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
 
     /**
      * JSONP通信エンジン
@@ -107,7 +132,7 @@
     function AdminApp() {
       const [isAuthenticated, setIsAuthenticated] = useState(false);
       const [inputPass, setInputPass] = useState("");
-      const [currentTab, setCurrentTab] = useState("active"); // "active" | "past" | "roster"
+      const [currentTab, setCurrentTab] = useState("active");
       
       const [dashboardData, setDashboardData] = useState({
         activeQuests: [],
@@ -182,9 +207,17 @@
         }
       }, []);
 
-      // 絞り込みフィルター
-      const filteredActive = useMemo(() => {
-        return (dashboardData.activeQuests || []).filter(q => {
+      // ★募集管理：日付昇順（直近が上）＋ 1週間前アラート判定
+      const { sortedActive, urgentCount } = useMemo(() => {
+        let urgent = 0;
+        const list = (dashboardData.activeQuests || []).map(q => {
+          const daysLeft = getDaysUntil(q.date);
+          const isUrgent = q.status === "募集中" && daysLeft >= 0 && daysLeft <= 7;
+          if (isUrgent) urgent++;
+          return { ...q, daysLeft, isUrgent };
+        });
+
+        const filtered = list.filter(q => {
           const matchStatus = statusFilter === "all" || q.status === statusFilter;
           const matchQuery = !searchQuery || 
             q.task.includes(searchQuery) || 
@@ -193,15 +226,25 @@
             q.id.includes(searchQuery);
           return matchStatus && matchQuery;
         });
+
+        // 昇順（活動日が近い順）
+        filtered.sort((a, b) => parseDateToTime(a.date) - parseDateToTime(b.date));
+
+        return { sortedActive: filtered, urgentCount: urgent };
       }, [dashboardData.activeQuests, statusFilter, searchQuery]);
 
-      const filteredPast = useMemo(() => {
-        return (dashboardData.pastQuests || []).filter(q => {
+      // ★過去履歴：日付降順（新しい日付が上）
+      const sortedPast = useMemo(() => {
+        const filtered = (dashboardData.pastQuests || []).filter(q => {
           return !searchQuery || 
             q.task.includes(searchQuery) || 
             q.location.includes(searchQuery) || 
             q.id.includes(searchQuery);
         });
+
+        // 降順（新しい実績順）
+        filtered.sort((a, b) => parseDateToTime(b.date) - parseDateToTime(a.date));
+        return filtered;
       }, [dashboardData.pastQuests, searchQuery]);
 
       const filteredVolunteers = useMemo(() => {
@@ -213,7 +256,6 @@
         });
       }, [dashboardData.volunteers, searchQuery]);
 
-      // 未認証時：パスコード入力画面
       if (!isAuthenticated) {
         return (
           <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100">
@@ -261,7 +303,6 @@
                 </div>
               </div>
 
-              {/* クイックアクション */}
               <div className="flex items-center gap-2">
                 <button
                   disabled={actionLoading}
@@ -304,6 +345,11 @@
                 <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
                   {dashboardData.activeQuests.length}
                 </span>
+                {urgentCount > 0 && (
+                  <span className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[11px] font-extrabold animate-pulse">
+                    要対応 {urgentCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -334,7 +380,6 @@
             </div>
           </header>
 
-          {/* メインコンテンツエリア */}
           <main className="max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-4 flex-1">
             
             {/* 検索・絞り込みバー */}
@@ -370,33 +415,61 @@
               <div className="text-center py-20 text-slate-400 font-bold">データを読み込み中...</div>
             ) : currentTab === "active" ? (
               
-              /* === タブ①：ボランティア募集管理 === */
+              /* === タブ①：ボランティア募集管理（日付昇順＆1週間前アラート） === */
               <div className="space-y-3">
-                <div className="text-xs font-bold text-slate-500">
-                  該当件数: {filteredActive.length} 件
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                  <div>該当件数: {sortedActive.length} 件（開催日が近い順）</div>
+                  {urgentCount > 0 && (
+                    <div className="text-rose-600 flex items-center gap-1 font-extrabold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                      <Icon name="alert-triangle" size={14} />
+                      <span>活動日まで7日以内で定員未達の案件が {urgentCount} 件あります</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredActive.map((q) => {
-                    const isFull = q.status === "成立済" || Number(q.current) >= Number(q.capacity);
+                  {sortedActive.map((q) => {
                     return (
-                      <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between">
+                      <div 
+                        key={q.id} 
+                        className={`bg-white rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between transition border-2 ${
+                          q.isUrgent 
+                            ? "border-rose-400 ring-2 ring-rose-100 bg-rose-50/20" 
+                            : "border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
                         <div className="space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-xs font-extrabold text-slate-400">{q.id}</span>
-                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
-                              q.status === "募集中" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
-                              q.status === "成立済" ? "bg-blue-50 text-blue-700 border-blue-300" :
-                              "bg-slate-100 text-slate-600 border-slate-300"
-                            }`}>
-                              {q.status}
-                            </span>
+                            
+                            <div className="flex items-center gap-1.5">
+                              {/* ★1週間前アラートバッジ */}
+                              {q.isUrgent && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-500 text-white flex items-center gap-1 shadow-sm">
+                                  <Icon name="alert-circle" size={12} />
+                                  <span>あと{q.daysLeft}日 (未達)</span>
+                                </span>
+                              )}
+
+                              <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
+                                q.status === "募集中" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+                                q.status === "成立済" ? "bg-blue-50 text-blue-700 border-blue-300" :
+                                "bg-slate-100 text-slate-600 border-slate-300"
+                              }`}>
+                                {q.status}
+                              </span>
+                            </div>
                           </div>
 
                           <h3 className="font-extrabold text-slate-900 text-base leading-snug">{q.task}</h3>
                           
                           <div className="space-y-1 text-xs text-slate-600">
-                            <div><strong>日時：</strong>{q.date} {q.time}〜</div>
+                            <div className="font-bold text-slate-900">
+                              📅 日時：{q.date} {q.time}〜
+                              <span className="ml-1 text-[11px] font-semibold text-slate-500">
+                                ({q.daysLeft < 0 ? "過去日" : q.daysLeft === 0 ? "本日開催" : `あと${q.daysLeft}日`})
+                              </span>
+                            </div>
                             <div><strong>場所：</strong>{q.location}</div>
                             <div><strong>定員：</strong>{q.current} / {q.capacity} 名</div>
                           </div>
@@ -412,7 +485,7 @@
                             </div>
                           </div>
 
-                          {/* 依頼者情報（事務局確認用） */}
+                          {/* 依頼者情報 */}
                           <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs space-y-0.5 text-amber-900">
                             <div className="font-bold">依頼代表者: {q.repName} 様</div>
                             <div>連絡先: <a href={`tel:${q.repPhone}`} className="underline font-bold">{q.repPhone}</a></div>
@@ -435,10 +508,10 @@
 
             ) : currentTab === "past" ? (
 
-              /* === タブ②：過去活動履歴 === */
+              /* === タブ②：過去活動履歴（日付降順：新しい順） === */
               <div className="space-y-3">
                 <div className="text-xs font-bold text-slate-500">
-                  過去履歴: {filteredPast.length} 件
+                  過去履歴: {sortedPast.length} 件（最新実績順）
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -448,7 +521,7 @@
                         <tr>
                           <th className="p-3">ID</th>
                           <th className="p-3">状態</th>
-                          <th className="p-3">活動日</th>
+                          <th className="p-3">活動日 ▼</th>
                           <th className="p-3">内容</th>
                           <th className="p-3">参加者</th>
                           <th className="p-3">報告日時</th>
@@ -458,10 +531,10 @@
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                        {filteredPast.length === 0 ? (
+                        {sortedPast.length === 0 ? (
                           <tr><td colSpan={9} className="p-6 text-center text-slate-400 font-bold">過去履歴データはありません。</td></tr>
                         ) : (
-                          filteredPast.map((h, idx) => (
+                          sortedPast.map((h, idx) => (
                             <tr key={idx} className="hover:bg-slate-50 transition">
                               <td className="p-3 font-bold text-slate-500">{h.id}</td>
                               <td className="p-3">
@@ -471,7 +544,7 @@
                                   {h.status}
                                 </span>
                               </td>
-                              <td className="p-3 whitespace-nowrap">{h.date}</td>
+                              <td className="p-3 whitespace-nowrap font-bold text-slate-900">{h.date}</td>
                               <td className="p-3 font-bold max-w-xs truncate">{h.task}</td>
                               <td className="p-3 whitespace-pre-wrap max-w-xs">{h.applicantNames || "-"}</td>
                               <td className="p-3 whitespace-nowrap text-slate-500">{h.reportTime || "-"}</td>
