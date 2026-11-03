@@ -38,27 +38,39 @@
     .animate-pulse { animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen">
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen text-[17px] leading-relaxed">
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect } = React;
 
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
-    // ★ご自身のGASウェブアプリURL（末尾 /exec）
+    // ★ご提示いただいた最新のGASウェブアプリURL
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
 
-    const Icon = ({ name, size = 18, className = "" }) => {
+    const Icon = ({ name, size = 20, className = "" }) => {
       useEffect(() => {
         if (window.lucide) {
           window.lucide.createIcons();
         }
       }, [name]);
-      return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[1.75] ${className}`}></i>;
+      return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[2] ${className}`}></i>;
     };
 
     /**
-     * ★堅牢デュアル通信エンジン（fetch & JSONPハイブリッド）
+     * スマホの標準地図アプリ（iPhoneならAppleマップ、その他はGoogleマップ）を開くURLを生成
+     */
+    function getMapAppUrl(locationText) {
+      const encoded = encodeURIComponent(locationText);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIOS) {
+        return `https://maps.apple.com/?q=${encoded}`;
+      }
+      return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+    }
+
+    /**
+     * 堅牢通信エンジン（fetch & JSONPハイブリッド）
      */
     async function requestGas(payload) {
       const parts = [];
@@ -76,7 +88,6 @@
       const sep = cleanUrl.includes("?") ? "&" : "?";
       const fetchUrl = cleanUrl + sep + parts.join("&");
 
-      // 試行1: 標準fetch
       try {
         const res = await fetch(fetchUrl, {
           method: "GET",
@@ -88,10 +99,9 @@
           throw new Error(json.error || "処理に失敗しました。");
         }
       } catch (e) {
-        // fetchが失敗した場合は試行2（JSONP）へフォールバック
+        // fetchが弾かれた場合はJSONPへ自動フォールバック
       }
 
-      // 試行2: JSONP完全フォールバック
       return new Promise((resolve, reject) => {
         const callbackName = "cb_" + Math.random().toString(36).substring(2, 8) + "_" + Date.now();
         const script = document.createElement("script");
@@ -120,7 +130,7 @@
 
         script.onerror = function() {
           cleanup();
-          reject(new Error("サーバー通信エラーが発生しました。ブラウザのキャッシュをクリアして再試行してください。"));
+          reject(new Error("サーバー通信エラーが発生しました。"));
         };
 
         script.src = fetchUrl + "&callback=" + callbackName;
@@ -247,7 +257,7 @@
             applicantContact: authVolunteer.phone || ""
           });
           setShowApplyModal(false);
-          showToast("立候補を受け付けました。LINEトークをご確認ください。", "success");
+          showToast("立候補を受け付けました。LINEをご確認ください。", "success");
           fetchQuests();
           setCurrentView("list");
         } catch (err) {
@@ -323,13 +333,14 @@
 
       return (
         <div className="min-h-screen flex flex-col">
-          <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
-            <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold">
-                  <Icon name="hand-heart" size={18} className="text-white" />
+          {/* ヘッダー */}
+          <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+            <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-sm">
+                  <Icon name="hand-heart" size={24} className="text-white" />
                 </div>
-                <h1 className="font-bold text-slate-800 text-base tracking-tight">地域ボランティア募集</h1>
+                <h1 className="font-extrabold text-slate-800 text-lg tracking-tight">地域ボランティア募集</h1>
               </div>
 
               {authVolunteer && (
@@ -343,14 +354,14 @@
                         setShowReportModal(true);
                       }
                     }}
-                    className="text-xs px-2.5 py-1.5 font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1 transition"
+                    className="text-sm px-3 py-2 font-bold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition border border-slate-200"
                   >
-                    <Icon name="file-check" size={14} />
+                    <Icon name="file-check" size={17} />
                     <span>完了報告</span>
                   </button>
                   <button 
                     onClick={handleLogout}
-                    className="text-xs px-2 py-1.5 font-medium text-slate-500 hover:text-slate-800 transition"
+                    className="text-sm px-2.5 py-2 font-medium text-slate-500 hover:text-slate-800 transition"
                   >
                     再設定
                   </button>
@@ -359,25 +370,26 @@
             </div>
           </header>
 
-          <main className="flex-1 max-w-2xl w-full mx-auto p-4 space-y-4">
+          <main className="flex-1 max-w-2xl w-full mx-auto p-4 space-y-5">
+            {/* 認証カード */}
             {!authVolunteer ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+              <div className="bg-white border-2 border-slate-300 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                    <Icon name="shield-check" size={16} className="text-brand-600" />
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Icon name="shield-check" size={20} className="text-brand-600" />
                     <span>ボランティア認証</span>
                   </h2>
-                  <span className="text-xs text-slate-500">登録済み番号でログイン</span>
+                  <span className="text-sm text-slate-500 font-medium">登録番号でログイン</span>
                 </div>
 
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-3">
                   <input
                     type="tel"
                     maxLength={4}
                     value={loginNo}
                     onChange={(e) => setLoginNo(e.target.value)}
-                    placeholder="登録番号 (001)"
-                    className="col-span-2 px-3 py-2 text-center text-sm font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    placeholder="番号 (001)"
+                    className="col-span-2 px-3 py-3.5 text-center text-lg font-bold border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50"
                   />
                   <input
                     type="tel"
@@ -385,78 +397,81 @@
                     value={loginPhone4}
                     onChange={(e) => setLoginPhone4(e.target.value)}
                     placeholder="電話番号下4桁"
-                    className="col-span-3 px-3 py-2 text-center text-sm font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="col-span-3 px-3 py-3.5 text-center text-lg font-bold border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50"
                   />
                 </div>
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2.5 pt-1">
                   <button
                     disabled={isSubmitting}
                     onClick={() => handleLogin(loginNo, loginPhone4)}
-                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm"
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold text-base py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
                   >
-                    <Icon name="log-in" size={16} />
+                    <Icon name="log-in" size={20} />
                     <span>{isSubmitting ? "認証中..." : "認証・一覧を表示"}</span>
                   </button>
                   <button
                     onClick={() => setShowRegisterModal(true)}
-                    className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-lg transition"
+                    className="px-5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-base py-3.5 rounded-xl transition border border-slate-300"
                   >
                     新規登録
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 flex items-center justify-between text-xs text-brand-700 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <Icon name="user-check" size={15} className="text-brand-600" />
-                  <span>認証中: <strong>[{authVolunteer.volunteerNo}] {authVolunteer.name} 様</strong></span>
+              <div className="bg-brand-50 border-2 border-brand-200 rounded-xl p-3.5 flex items-center justify-between text-base text-brand-800 font-bold">
+                <div className="flex items-center gap-2">
+                  <Icon name="user-check" size={19} className="text-brand-600" />
+                  <span>認証中: [{authVolunteer.volunteerNo}] {authVolunteer.name} 様</span>
                 </div>
-                <span className="bg-white border border-brand-200 text-brand-700 px-2 py-0.5 rounded-full text-[11px]">認証済み</span>
+                <span className="bg-white border border-brand-300 text-brand-800 px-2.5 py-0.5 rounded-full text-xs font-bold">認証済</span>
               </div>
             )}
 
+            {/* パンくずリスト */}
             {currentView === "detail" && (
-              <nav className="flex items-center gap-1.5 text-xs text-slate-500 py-1">
-                <button onClick={() => setCurrentView("list")} className="hover:text-slate-800 flex items-center gap-1">
-                  <Icon name="arrow-left" size={14} />
-                  <span>募集一覧</span>
+              <nav className="flex items-center gap-2 text-sm text-slate-600 py-1 font-semibold">
+                <button onClick={() => setCurrentView("list")} className="hover:text-slate-900 flex items-center gap-1">
+                  <Icon name="arrow-left" size={18} />
+                  <span>募集一覧へ戻る</span>
                 </button>
                 <span>/</span>
-                <span className="text-slate-800 font-medium truncate max-w-[200px]">{selectedQuest?.task}</span>
+                <span className="text-slate-900 font-bold truncate max-w-[220px]">{selectedQuest?.task}</span>
               </nav>
             )}
 
+            {/* 未認証時プレースホルダー */}
             {!authVolunteer ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-8 text-center space-y-2">
-                <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
-                  <Icon name="lock" size={22} />
+              <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
+                <div className="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                  <Icon name="lock" size={28} />
                 </div>
-                <h3 className="font-bold text-slate-700 text-sm">認証が必要です</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  プライバシー保護のため、ボランティア認証を行うと<br />現在募集中の案件詳細が表示されます。
+                <h3 className="font-extrabold text-slate-800 text-lg">ボランティア認証が必要です</h3>
+                <p className="text-base text-slate-600 leading-relaxed font-medium">
+                  上の枠に「登録番号」と「電話番号下4桁」を入力して<br />「認証・一覧を表示」を押してください。
                 </p>
               </div>
             ) : loading ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 animate-pulse">
+                  <div key={n} className="bg-white border-2 border-slate-200 rounded-2xl p-5 space-y-4 animate-pulse">
                     <div className="flex justify-between items-start">
-                      <div className="h-5 bg-slate-200 rounded w-2/3"></div>
-                      <div className="h-5 bg-slate-200 rounded w-16"></div>
+                      <div className="h-6 bg-slate-200 rounded w-2/3"></div>
+                      <div className="h-6 bg-slate-200 rounded w-20"></div>
                     </div>
-                    <div className="space-y-1.5">
-                      <div className="h-4 bg-slate-200 rounded w-1/2"></div>
-                      <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    <div className="space-y-2">
+                      <div className="h-5 bg-slate-200 rounded w-1/2"></div>
+                      <div className="h-5 bg-slate-200 rounded w-3/4"></div>
                     </div>
-                    <div className="h-9 bg-slate-200 rounded w-full pt-2"></div>
+                    <div className="h-12 bg-slate-200 rounded w-full pt-2"></div>
                   </div>
                 ))}
               </div>
             ) : currentView === "list" ? (
-              <div className="space-y-3">
+              /* 一覧画面 */
+              <div className="space-y-4">
                 {quests.length === 0 ? (
-                  <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-10 text-center text-base font-bold text-slate-500">
                     現在募集中の活動依頼はありません。
                   </div>
                 ) : (
@@ -464,74 +479,74 @@
                     const remaining = q.capacity - q.current;
                     const isFull = remaining <= 0;
                     return (
-                      <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-slate-300 transition space-y-3">
-                        <div className="flex items-start justify-between gap-2">
+                      <div key={q.id} className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm hover:border-slate-300 transition space-y-4">
+                        <div className="flex items-start justify-between gap-3">
                           <h3 
                             onClick={() => { setSelectedQuest(q); setCurrentView("detail"); }}
-                            className="font-bold text-slate-900 text-base leading-snug hover:text-brand-600 cursor-pointer flex-1"
+                            className="font-extrabold text-slate-900 text-xl leading-snug hover:text-brand-600 cursor-pointer flex-1"
                           >
                             {q.task}
                           </h3>
                           
                           <button
                             onClick={() => { setSheetQuest(q); setShowApplicantsSheet(true); }}
-                            className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 transition ${
+                            className={`shrink-0 text-sm px-3 py-1.5 rounded-full font-bold border-2 flex items-center gap-1.5 transition ${
                               isFull 
-                                ? "bg-slate-100 text-slate-600 border-slate-200" 
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                ? "bg-slate-100 text-slate-600 border-slate-300" 
+                                : "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
                             }`}
                           >
-                            <Icon name="users" size={13} />
+                            <Icon name="users" size={16} />
                             <span>
                               {isFull ? "定員成立" : `残り ${remaining}名 / 定員 ${q.capacity}名`}
                             </span>
                           </button>
                         </div>
 
-                        <div className="space-y-1.5 text-xs text-slate-600">
+                        <div className="space-y-2.5 text-base text-slate-700">
                           <div className="flex items-center gap-2">
-                            <span className="flex items-center gap-1 font-semibold text-slate-500 w-12 shrink-0">
-                              <Icon name="calendar" size={13} /> 日時
+                            <span className="flex items-center gap-1.5 font-bold text-slate-500 w-16 shrink-0">
+                              <Icon name="calendar" size={17} /> 日時
                             </span>
-                            <span>{q.date} {q.time}〜</span>
+                            <span className="font-semibold">{q.date} {q.time}〜</span>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <span className="flex items-center gap-1 font-semibold text-slate-500 w-12 shrink-0">
-                              <Icon name="map-pin" size={13} /> 場所
+                            <span className="flex items-center gap-1.5 font-bold text-slate-500 w-16 shrink-0">
+                              <Icon name="map-pin" size={17} /> 場所
                             </span>
-                            <span className="truncate flex-1">{q.location}</span>
+                            <span className="truncate flex-1 font-semibold">{q.location}</span>
                             <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q.location)}`}
+                              href={getMapAppUrl(q.location)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-brand-700 hover:text-brand-800 font-medium underline flex items-center gap-0.5 shrink-0"
+                              className="text-sm bg-slate-100 text-slate-800 border border-slate-300 hover:bg-slate-200 px-3 py-1 rounded-lg font-bold flex items-center gap-1 shrink-0"
                             >
+                              <Icon name="map" size={15} className="text-brand-600" />
                               <span>地図</span>
-                              <Icon name="external-link" size={11} />
                             </a>
                           </div>
                         </div>
 
-                        <div className="pt-1 flex gap-2">
+                        <div className="pt-2 flex gap-2.5">
                           <button
                             onClick={() => { setSelectedQuest(q); setCurrentView("detail"); }}
-                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1"
+                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-base py-3 rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-200"
                           >
                             <span>詳細を見る</span>
-                            <Icon name="chevron-right" size={14} />
+                            <Icon name="chevron-right" size={18} />
                           </button>
 
                           <button
                             disabled={isFull}
                             onClick={() => { setSelectedQuest(q); setShowApplyModal(true); }}
-                            className={`flex-1 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1 ${
+                            className={`flex-1 font-bold text-base py-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
                               isFull 
-                                ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200" 
                                 : "bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
                             }`}
                           >
-                            <Icon name="check" size={14} />
+                            <Icon name="check" size={18} />
                             <span>立候補する</span>
                           </button>
                         </div>
@@ -541,95 +556,101 @@
                 )}
               </div>
             ) : (
+              /* 詳細画面 */
               selectedQuest && (
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+                  <div className="flex items-start justify-between gap-3 border-b-2 border-slate-100 pb-4">
                     <div>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{selectedQuest.id}</span>
-                      <h2 className="text-lg font-bold text-slate-900 mt-0.5">{selectedQuest.task}</h2>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{selectedQuest.id}</span>
+                      <h2 className="text-2xl font-extrabold text-slate-900 mt-1">{selectedQuest.task}</h2>
                     </div>
                     <button
                       onClick={() => { setSheetQuest(selectedQuest); setShowApplicantsSheet(true); }}
-                      className="text-xs px-2.5 py-1 rounded-full font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0"
+                      className="text-sm px-3 py-1.5 rounded-full font-bold border-2 bg-emerald-50 text-emerald-800 border-emerald-300 shrink-0"
                     >
                       残り {selectedQuest.capacity - selectedQuest.current}名 / 定員 {selectedQuest.capacity}名
                     </button>
                   </div>
 
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3">
-                      <div className="w-16 font-semibold text-slate-500 flex items-center gap-1 shrink-0 pt-0.5">
-                        <Icon name="calendar" size={15} /> 日時
+                  <div className="space-y-4 text-base">
+                    <div className="flex items-start gap-4">
+                      <div className="w-20 font-bold text-slate-500 flex items-center gap-1.5 shrink-0 pt-0.5">
+                        <Icon name="calendar" size={18} /> 日時
                       </div>
-                      <div className="text-slate-800 font-medium">
+                      <div className="text-slate-900 font-bold text-lg">
                         {selectedQuest.date} {selectedQuest.time}〜
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3">
-                      <div className="w-16 font-semibold text-slate-500 flex items-center gap-1 shrink-0 pt-0.5">
-                        <Icon name="map-pin" size={15} /> 場所
+                    <div className="flex items-start gap-4">
+                      <div className="w-20 font-bold text-slate-500 flex items-center gap-1.5 shrink-0 pt-0.5">
+                        <Icon name="map-pin" size={18} /> 場所
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="text-slate-800 font-medium">{selectedQuest.location}</div>
+                      <div className="flex-1 space-y-2">
+                        <div className="text-slate-900 font-bold text-lg">{selectedQuest.location}</div>
                         <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedQuest.location)}`}
+                          href={getMapAppUrl(selectedQuest.location)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-brand-700 hover:underline font-medium"
+                          className="inline-flex items-center gap-2 text-base text-brand-700 hover:text-brand-800 font-bold bg-brand-50 border border-brand-200 px-3.5 py-1.5 rounded-lg"
                         >
-                          <Icon name="map" size={13} />
-                          <span>Google Mapsで地図を確認する</span>
-                          <Icon name="external-link" size={11} />
+                          <Icon name="map" size={18} />
+                          <span>地図アプリを開く</span>
+                          <Icon name="external-link" size={14} />
                         </a>
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3">
-                      <div className="w-16 font-semibold text-slate-500 flex items-center gap-1 shrink-0 pt-0.5">
-                        <Icon name="info" size={15} /> 備考
+                    <div className="flex items-start gap-4">
+                      <div className="w-20 font-bold text-slate-500 flex items-center gap-1.5 shrink-0 pt-0.5">
+                        <Icon name="info" size={18} /> 備考
                       </div>
-                      <div className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">
+                      <div className="text-slate-800 leading-relaxed font-medium whitespace-pre-wrap flex-1 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                         {selectedQuest.notes || "特記事項はありません。"}
                       </div>
                     </div>
 
-                    {selectedQuest.briefingUrl && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
-                          <Icon name="file-text" size={16} className="text-emerald-600" />
+                    {/* ★事前資料URL欄（存在する場合のみ表示） */}
+                    {selectedQuest.briefingUrl && selectedQuest.briefingUrl.trim() !== "" && (
+                      <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl space-y-2">
+                        <div className="flex items-center gap-2 font-bold text-emerald-900 text-base">
+                          <Icon name="file-text" size={20} className="text-emerald-700" />
                           <span>事前ブリーフィング資料・現場写真</span>
                         </div>
+                        <p className="text-sm text-emerald-800">
+                          活動内容の詳細や現場写真が掲載されています。事前にご確認ください。
+                        </p>
                         <a 
                           href={selectedQuest.briefingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs bg-white border border-emerald-300 text-emerald-700 px-2.5 py-1 rounded font-medium hover:bg-emerald-100 flex items-center gap-1"
+                          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base px-4 py-2.5 rounded-xl shadow-sm transition"
                         >
-                          <span>閲覧</span>
-                          <Icon name="external-link" size={11} />
+                          <span>資料・写真を確認する</span>
+                          <Icon name="external-link" size={16} />
                         </a>
                       </div>
                     )}
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex gap-2">
+                  {/* 詳細ページの立候補アクション */}
+                  <div className="pt-4 border-t-2 border-slate-100 flex gap-3">
                     <button
                       onClick={() => setCurrentView("list")}
-                      className="px-4 py-2.5 bg-slate-100 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-200 transition"
+                      className="px-5 py-3.5 bg-slate-100 text-slate-800 font-bold text-base rounded-xl hover:bg-slate-200 transition border border-slate-300"
                     >
                       戻る
                     </button>
                     <button
                       disabled={selectedQuest.capacity <= selectedQuest.current}
                       onClick={() => setShowApplyModal(true)}
-                      className={`flex-1 font-semibold text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
+                      className={`flex-1 font-bold text-lg py-3.5 rounded-xl transition flex items-center justify-center gap-2 ${
                         selectedQuest.capacity <= selectedQuest.current
-                          ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                          : "bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                          : "bg-brand-600 hover:bg-brand-700 text-white shadow-md"
                       }`}
                     >
-                      <Icon name="check" size={16} />
+                      <Icon name="check" size={20} />
                       <span>この活動に立候補する</span>
                     </button>
                   </div>
@@ -638,38 +659,38 @@
             )}
           </main>
 
-          {/* ボトムシート：立候補者リスト */}
+          {/* 立候補者一覧ボトムシート */}
           {showApplicantsSheet && sheetQuest && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-              <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-xl max-h-[80vh] flex flex-col">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+                <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <Icon name="users" size={18} className="text-brand-600" />
-                    <h3 className="font-bold text-slate-800 text-sm">現在の立候補者</h3>
+                    <Icon name="users" size={22} className="text-brand-600" />
+                    <h3 className="font-extrabold text-slate-900 text-lg">現在の立候補者一覧</h3>
                   </div>
-                  <button onClick={() => setShowApplicantsSheet(false)} className="text-slate-400 hover:text-slate-600">
-                    <Icon name="x" size={18} />
+                  <button onClick={() => setShowApplicantsSheet(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                    <Icon name="x" size={22} />
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-2">
-                  <div className="text-xs text-slate-500 mb-2">
+                  <div className="text-sm font-semibold text-slate-600 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                     案件：<strong>{sheetQuest.task}</strong>（定員 {sheetQuest.capacity}名）
                   </div>
 
                   {sheetQuest.applicants && sheetQuest.applicants.length > 0 ? (
-                    <ul className="divide-y divide-slate-100">
+                    <ul className="divide-y-2 divide-slate-100">
                       {sheetQuest.applicants.map((name, idx) => (
-                        <li key={idx} className="py-2.5 flex items-center justify-between text-sm">
-                          <span className="font-medium text-slate-800">{name}</span>
-                          <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                            {idx === 0 ? "リーダー候補" : "参加予定"}
+                        <li key={idx} className="py-3 flex items-center justify-between text-base">
+                          <span className="font-bold text-slate-900">{name}</span>
+                          <span className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                            {idx === 0 ? "リーダー担当" : "参加予定"}
                           </span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <div className="text-center py-6 text-xs text-slate-400">
+                    <div className="text-center py-8 text-sm font-bold text-slate-400">
                       まだ立候補している方はいません。
                     </div>
                   )}
@@ -677,7 +698,7 @@
 
                 <button
                   onClick={() => setShowApplicantsSheet(false)}
-                  className="w-full py-2.5 bg-slate-100 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-200 transition"
+                  className="w-full py-3.5 bg-slate-100 text-slate-800 font-bold text-base rounded-xl hover:bg-slate-200 transition border border-slate-300"
                 >
                   閉じる
                 </button>
@@ -687,49 +708,49 @@
 
           {/* 新規登録モーダル */}
           {showRegisterModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-              <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 text-base">ボランティア新規利用登録</h3>
-                  <button onClick={() => setShowRegisterModal(false)} className="text-slate-400 hover:text-slate-600">
-                    <Icon name="x" size={18} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h3 className="font-extrabold text-slate-900 text-lg">ボランティア新規利用登録</h3>
+                  <button onClick={() => setShowRegisterModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                    <Icon name="x" size={22} />
                   </button>
                 </div>
 
-                <div className="space-y-3 text-sm">
+                <div className="space-y-4 text-base">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">お名前（本名）</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">お名前（本名）</label>
                     <input
                       type="text"
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       placeholder="例：地域 太郎"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      className="w-full px-4 py-3.5 border-2 border-slate-300 rounded-xl text-base font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">お電話番号</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">お電話番号</label>
                     <input
                       type="tel"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       placeholder="例：09012345678"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      className="w-full px-4 py-3.5 border-2 border-slate-300 rounded-xl text-base font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowRegisterModal(false)}
-                    className="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-200 transition"
+                    className="flex-1 py-3 bg-slate-100 text-slate-800 font-bold text-base rounded-xl hover:bg-slate-200 transition border border-slate-200"
                   >
                     キャンセル
                   </button>
                   <button
                     disabled={isSubmitting}
                     onClick={handleRegister}
-                    className="flex-1 py-2 bg-brand-600 text-white font-semibold text-xs rounded-lg hover:bg-brand-700 transition"
+                    className="flex-1 py-3 bg-brand-600 text-white font-bold text-base rounded-xl hover:bg-brand-700 transition shadow-sm"
                   >
                     {isSubmitting ? "登録中..." : "登録して番号発行"}
                   </button>
@@ -740,31 +761,31 @@
 
           {/* 立候補確認モーダル */}
           {showApplyModal && selectedQuest && authVolunteer && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-              <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
-                <h3 className="font-bold text-slate-900 text-base">立候補の確認</h3>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl">
+                <h3 className="font-extrabold text-slate-900 text-xl border-b pb-3">立候補の確認</h3>
                 
-                <div className="bg-slate-50 p-3 rounded-lg text-xs space-y-1 border border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-xl text-base space-y-2 border-2 border-slate-200">
                   <div><strong>活動内容：</strong>{selectedQuest.task}</div>
                   <div><strong>活動日時：</strong>{selectedQuest.date} {selectedQuest.time}〜</div>
                   <div><strong>立候補者：</strong>[{authVolunteer.volunteerNo}] {authVolunteer.name} 様</div>
                 </div>
 
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  確定すると、LINEトーク画面へ当日の集合場所や依頼者の連絡先が自動送信されます。
+                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                  ※確定すると、LINEトーク画面へ当日の集合場所や依頼者の連絡先が自動送信されます。
                 </p>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowApplyModal(false)}
-                    className="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-200 transition"
+                    className="flex-1 py-3.5 bg-slate-100 text-slate-800 font-bold text-base rounded-xl hover:bg-slate-200 transition border border-slate-200"
                   >
                     戻る
                   </button>
                   <button
                     disabled={isSubmitting}
                     onClick={handleApply}
-                    className="flex-1 py-2 bg-brand-600 text-white font-semibold text-xs rounded-lg hover:bg-brand-700 transition"
+                    className="flex-1 py-3.5 bg-brand-600 text-white font-bold text-base rounded-xl hover:bg-brand-700 transition shadow-md"
                   >
                     {isSubmitting ? "送信中..." : "立候補を確定する"}
                   </button>
@@ -775,24 +796,24 @@
 
           {/* 完了報告モーダル */}
           {showReportModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-              <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
-                <h3 className="font-bold text-slate-900 text-base">活動完了報告</h3>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+                <h3 className="font-extrabold text-slate-900 text-xl border-b pb-3">活動完了報告</h3>
                 
-                <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
+                <form onSubmit={handleReportSubmit} className="space-y-4 text-base">
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1">対象募集ID</label>
+                    <label className="block font-bold text-slate-700 mb-1">対象募集ID</label>
                     <input
                       type="text"
                       readOnly
                       value={reportQuestId}
-                      className="w-full px-3 py-1.5 bg-slate-100 border border-slate-200 rounded font-bold"
+                      className="w-full px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1">Q1. 実施状況</label>
-                    <select name="status" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                    <label className="block font-bold text-slate-700 mb-1">Q1. 実施状況</label>
+                    <select name="status" className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl font-semibold">
                       <option value="無事完了">無事に完了した</option>
                       <option value="一部課題あり">一部課題・やり残しあり</option>
                       <option value="未実施・中止">実施できなかった・中止</option>
@@ -800,8 +821,8 @@
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1">Q2. 現場の雰囲気</label>
-                    <select name="mood" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                    <label className="block font-bold text-slate-700 mb-1">Q2. 現場の雰囲気</label>
+                    <select name="mood" className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl font-semibold">
                       <option value="とても良かった">とても良かった（大変喜ばれた）</option>
                       <option value="普通">普通（問題なく活動できた）</option>
                       <option value="少し困ったことがあった">少し困ったことがあった</option>
@@ -809,22 +830,22 @@
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-600 mb-1">連絡事項・特記事項（任意）</label>
-                    <textarea name="notes" rows={2} placeholder="気付いた点など" className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs"></textarea>
+                    <label className="block font-bold text-slate-700 mb-1">連絡事項・特記事項（任意）</label>
+                    <textarea name="notes" rows={2} placeholder="気付いた点など" className="w-full px-4 py-2 border-2 border-slate-300 rounded-xl text-sm"></textarea>
                   </div>
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setShowReportModal(false)}
-                      className="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg"
+                      className="flex-1 py-3 bg-slate-100 text-slate-800 font-bold text-base rounded-xl border border-slate-200"
                     >
                       閉じる
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex-1 py-2 bg-brand-600 text-white font-semibold text-xs rounded-lg hover:bg-brand-700"
+                      className="flex-1 py-3 bg-brand-600 text-white font-bold text-base rounded-xl hover:bg-brand-700 shadow-sm"
                     >
                       {isSubmitting ? "送信中..." : "報告を送信"}
                     </button>
@@ -834,11 +855,12 @@
             </div>
           )}
 
+          {/* トースト通知 */}
           {toast.show && (
-            <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-slate-900 text-white text-xs py-3 px-4 rounded-xl shadow-lg flex items-center justify-between gap-2 border border-slate-800 transition-all">
+            <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-slate-900 text-white text-sm py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-between gap-3 border border-slate-800 font-bold">
               <span>{toast.message}</span>
-              <button onClick={() => setToast({ show: false, message: "", type: "info" })} className="text-slate-400 hover:text-white">
-                <Icon name="x" size={14} />
+              <button onClick={() => setToast({ show: false, message: "", type: "info" })} className="text-slate-400 hover:text-white p-1">
+                <Icon name="x" size={16} />
               </button>
             </div>
           )}
