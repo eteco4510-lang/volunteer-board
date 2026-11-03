@@ -45,7 +45,7 @@
     const { useState, useEffect } = React;
 
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
-    // ★ご提示いただいた最新のGASウェブアプリURL
+    // ★最新のGASウェブアプリURL
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
 
     const Icon = ({ name, size = 20, className = "" }) => {
@@ -57,9 +57,6 @@
       return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[2] ${className}`}></i>;
     };
 
-    /**
-     * スマホの標準地図アプリ（iPhoneならAppleマップ、その他はGoogleマップ）を開くURLを生成
-     */
     function getMapAppUrl(locationText) {
       const encoded = encodeURIComponent(locationText);
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -69,9 +66,6 @@
       return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
     }
 
-    /**
-     * 堅牢通信エンジン（fetch & JSONPハイブリッド）
-     */
     async function requestGas(payload) {
       const parts = [];
       for (const key in payload) {
@@ -98,9 +92,7 @@
           if (json.success) return json.data;
           throw new Error(json.error || "処理に失敗しました。");
         }
-      } catch (e) {
-        // fetchが弾かれた場合はJSONPへ自動フォールバック
-      }
+      } catch (e) {}
 
       return new Promise((resolve, reject) => {
         const callbackName = "cb_" + Math.random().toString(36).substring(2, 8) + "_" + Date.now();
@@ -333,18 +325,23 @@
 
       return (
         <div className="min-h-screen flex flex-col">
-          {/* ヘッダー */}
+          {/* ★修正：改行を完全防止したスティッキーヘッダー */}
           <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-            <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-sm">
-                  <Icon name="hand-heart" size={24} className="text-white" />
+            <div className="max-w-2xl mx-auto px-3.5 h-16 flex items-center justify-between gap-2">
+              
+              {/* タイトル（改行禁止 & アイコンサイズ調整） */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
+                  <Icon name="hand-heart" size={20} className="text-white" />
                 </div>
-                <h1 className="font-extrabold text-slate-800 text-lg tracking-tight">地域ボランティア募集</h1>
+                <h1 className="font-extrabold text-slate-800 text-[17px] sm:text-lg tracking-tight whitespace-nowrap">
+                  地域ボランティア募集
+                </h1>
               </div>
 
+              {/* 右側アクションボタン（折り返し防止） */}
               {authVolunteer && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button 
                     onClick={() => {
                       const num = prompt("報告する募集番号の数字を入力してください（例: 001）");
@@ -354,14 +351,14 @@
                         setShowReportModal(true);
                       }
                     }}
-                    className="text-sm px-3 py-2 font-bold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition border border-slate-200"
+                    className="text-xs px-2.5 py-1.5 font-bold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1 transition border border-slate-200 whitespace-nowrap"
                   >
-                    <Icon name="file-check" size={17} />
+                    <Icon name="file-check" size={14} />
                     <span>完了報告</span>
                   </button>
                   <button 
                     onClick={handleLogout}
-                    className="text-sm px-2.5 py-2 font-medium text-slate-500 hover:text-slate-800 transition"
+                    className="text-xs px-2 py-1.5 font-medium text-slate-500 hover:text-slate-800 transition whitespace-nowrap"
                   >
                     再設定
                   </button>
@@ -440,7 +437,6 @@
               </nav>
             )}
 
-            {/* 未認証時プレースホルダー */}
             {!authVolunteer ? (
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
                 <div className="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
@@ -610,7 +606,6 @@
                       </div>
                     </div>
 
-                    {/* ★事前資料URL欄（存在する場合のみ表示） */}
                     {selectedQuest.briefingUrl && selectedQuest.briefingUrl.trim() !== "" && (
                       <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl space-y-2">
                         <div className="flex items-center gap-2 font-bold text-emerald-900 text-base">
@@ -633,7 +628,6 @@
                     )}
                   </div>
 
-                  {/* 詳細ページの立候補アクション */}
                   <div className="pt-4 border-t-2 border-slate-100 flex gap-3">
                     <button
                       onClick={() => setCurrentView("list")}
