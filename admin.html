@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>事務局ポータル | 地域ボランティアセンター</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen text-[15px]">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // ★最新のGASウェブアプリURL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    // ★事務局ログイン用パスコード（必要に応じて変更してください）
+    const ADMIN_PASSCODE = "1234";
+
+    const Icon = ({ name, size = 18, className = "" }) => {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [name]);
+      return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[2] ${className}`}></i>;
+    };
+
+    /**
+     * JSONP通信エンジン
+     */
+    function requestGas(payload) {
+      return new Promise((resolve, reject) => {
+        const callbackName = "admin_cb_" + Math.random().toString(36).substring(2, 8) + "_" + Date.now();
+        const script = document.createElement("script");
+        script.referrerPolicy = "no-referrer";
+        script.crossOrigin = "anonymous";
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("通信がタイムアウトしました。"));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          if (data && data.success) {
+            resolve(data.data);
+          } else {
+            reject(new Error((data && data.error) ? data.error : "処理に失敗しました。"));
+          }
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error("サーバー通信エラーが発生しました。"));
+        };
+
+        const parts = [];
+        for (const key in payload) {
+          if (Object.prototype.hasOwnProperty.call(payload, key)) {
+            const val = payload[key];
+            if (val !== undefined && val !== null) {
+              parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+            }
+          }
+        }
+        parts.push("callback=" + callbackName);
+        parts.push("_ts=" + Date.now());
+
+        const baseUrl = GAS_API_URL.trim();
+        const sep = baseUrl.includes("?") ? "&" : "?";
+        script.src = baseUrl + sep + parts.join("&");
+
+        document.head.appendChild(script);
+      });
+    }
+
+    function AdminApp() {
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [inputPass, setInputPass] = useState("");
+      const [currentTab, setCurrentTab] = useState("active"); // "active" | "past" | "roster"
+      
+      const [dashboardData, setDashboardData] = useState({
+        activeQuests: [],
+        pastQuests: [],
+        volunteers: []
+      });
+      const [loading, setLoading] = useState(false);
+      const [actionLoading, setActionLoading] = useState(false);
+      const [searchQuery, setSearchQuery] = useState("");
+      const [statusFilter, setStatusFilter] = useState("all");
+
+      const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+      const showToast = (message, type = "info") => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: "", type: "info" }), 4000);
+      };
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        if (inputPass === ADMIN_PASSCODE) {
+          setIsAuthenticated(true);
+          sessionStorage.setItem("admin_auth", "true");
+          fetchAdminData();
+        } else {
+          alert("パスコードが正しくありません。");
+        }
+      };
+
+      const fetchAdminData = async () => {
+        setLoading(true);
+        try {
+          const res = await requestGas({ action: "getAdminDashboardData" });
+          setDashboardData(res || { activeQuests: [], pastQuests: [], volunteers: [] });
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleSyncRequests = async () => {
+        setActionLoading(true);
+        try {
+          const res = await requestGas({ action: "adminSyncRequests" });
+          setDashboardData(res);
+          showToast("フォーム回答の同期が完了しました。", "success");
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setActionLoading(false);
+        }
+      };
+
+      const handleArchiveQuests = async () => {
+        if (!confirm("終了・過去日になった案件を「ボランティア過去履歴」シートへ移行しますか？")) return;
+        setActionLoading(true);
+        try {
+          const res = await requestGas({ action: "adminArchiveQuests" });
+          showToast(`${res.archivedCount} 件の案件をアーカイブしました。`, "success");
+          fetchAdminData();
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setActionLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        if (sessionStorage.getItem("admin_auth") === "true") {
+          setIsAuthenticated(true);
+          fetchAdminData();
+        }
+      }, []);
+
+      // 絞り込みフィルター
+      const filteredActive = useMemo(() => {
+        return (dashboardData.activeQuests || []).filter(q => {
+          const matchStatus = statusFilter === "all" || q.status === statusFilter;
+          const matchQuery = !searchQuery || 
+            q.task.includes(searchQuery) || 
+            q.location.includes(searchQuery) || 
+            q.repName.includes(searchQuery) ||
+            q.id.includes(searchQuery);
+          return matchStatus && matchQuery;
+        });
+      }, [dashboardData.activeQuests, statusFilter, searchQuery]);
+
+      const filteredPast = useMemo(() => {
+        return (dashboardData.pastQuests || []).filter(q => {
+          return !searchQuery || 
+            q.task.includes(searchQuery) || 
+            q.location.includes(searchQuery) || 
+            q.id.includes(searchQuery);
+        });
+      }, [dashboardData.pastQuests, searchQuery]);
+
+      const filteredVolunteers = useMemo(() => {
+        return (dashboardData.volunteers || []).filter(v => {
+          return !searchQuery || 
+            v.name.includes(searchQuery) || 
+            v.phone.includes(searchQuery) || 
+            v.no.includes(searchQuery);
+        });
+      }, [dashboardData.volunteers, searchQuery]);
+
+      // 未認証時：パスコード入力画面
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+            <div className="bg-white border-2 border-slate-300 rounded-2xl p-8 max-w-sm w-full shadow-lg text-center space-y-5">
+              <div className="w-14 h-14 bg-brand-50 text-brand-700 rounded-2xl flex items-center justify-center mx-auto border border-brand-200">
+                <Icon name="shield" size={28} />
+              </div>
+              <div>
+                <h1 className="text-xl font-extrabold text-slate-800">ボランティアセンター事務局</h1>
+                <p className="text-xs text-slate-500 mt-1">管理ポータルへのアクセス認証</p>
+              </div>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <input
+                  type="password"
+                  value={inputPass}
+                  onChange={(e) => setInputPass(e.target.value)}
+                  placeholder="パスコードを入力"
+                  className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl text-center text-lg font-bold tracking-widest focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow transition"
+                >
+                  認証してログイン
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          {/* ヘッダー */}
+          <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold">
+                  <Icon name="layout-dashboard" size={18} />
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-slate-800 text-base leading-none">地域ボランティアセンター 事務局</h1>
+                  <span className="text-[11px] text-slate-400 font-medium">運行・募集管理ポータル</span>
+                </div>
+              </div>
+
+              {/* クイックアクション */}
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={actionLoading}
+                  onClick={handleSyncRequests}
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1.5 border border-slate-300"
+                >
+                  <Icon name="refresh-cw" size={14} className={actionLoading ? "animate-spin" : ""} />
+                  <span className="hidden sm:inline">フォーム回答を手動同期</span>
+                  <span className="sm:hidden">同期</span>
+                </button>
+                <button
+                  disabled={actionLoading}
+                  onClick={handleArchiveQuests}
+                  className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-lg transition flex items-center gap-1.5 border border-emerald-300"
+                >
+                  <Icon name="archive" size={14} />
+                  <span className="hidden sm:inline">終了案件をアーカイブ</span>
+                  <span className="sm:hidden">アーカイブ</span>
+                </button>
+                <button
+                  onClick={() => { sessionStorage.removeItem("admin_auth"); setIsAuthenticated(false); }}
+                  className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
+                  title="ログアウト"
+                >
+                  <Icon name="log-out" size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* タブナビゲーション */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-6 border-t border-slate-100 text-sm font-bold">
+              <button
+                onClick={() => { setCurrentTab("active"); setSearchQuery(""); }}
+                className={`py-3 border-b-2 flex items-center gap-2 transition ${
+                  currentTab === "active" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icon name="clipboard-list" size={16} />
+                <span>ボランティア募集管理</span>
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
+                  {dashboardData.activeQuests.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => { setCurrentTab("past"); setSearchQuery(""); }}
+                className={`py-3 border-b-2 flex items-center gap-2 transition ${
+                  currentTab === "past" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icon name="history" size={16} />
+                <span>過去活動履歴</span>
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
+                  {dashboardData.pastQuests.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => { setCurrentTab("roster"); setSearchQuery(""); }}
+                className={`py-3 border-b-2 flex items-center gap-2 transition ${
+                  currentTab === "roster" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icon name="users" size={16} />
+                <span>ボランティア名簿</span>
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
+                  {dashboardData.volunteers.length}
+                </span>
+              </button>
+            </div>
+          </header>
+
+          {/* メインコンテンツエリア */}
+          <main className="max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-4 flex-1">
+            
+            {/* 検索・絞り込みバー */}
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-3 items-center justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+                <Icon name="search" size={16} className="text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="キーワード検索（ID、内容、場所、お名前など）"
+                  className="w-full text-sm font-medium focus:outline-none"
+                />
+              </div>
+
+              {currentTab === "active" && (
+                <div className="flex items-center gap-2 shrink-0 text-xs">
+                  <span className="text-slate-400 font-bold">状態:</span>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-700 bg-slate-50"
+                  >
+                    <option value="all">すべて表示</option>
+                    <option value="募集中">募集中のみ</option>
+                    <option value="成立済">成立済のみ</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="text-center py-20 text-slate-400 font-bold">データを読み込み中...</div>
+            ) : currentTab === "active" ? (
+              
+              /* === タブ①：ボランティア募集管理 === */
+              <div className="space-y-3">
+                <div className="text-xs font-bold text-slate-500">
+                  該当件数: {filteredActive.length} 件
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredActive.map((q) => {
+                    const isFull = q.status === "成立済" || Number(q.current) >= Number(q.capacity);
+                    return (
+                      <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs font-extrabold text-slate-400">{q.id}</span>
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
+                              q.status === "募集中" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+                              q.status === "成立済" ? "bg-blue-50 text-blue-700 border-blue-300" :
+                              "bg-slate-100 text-slate-600 border-slate-300"
+                            }`}>
+                              {q.status}
+                            </span>
+                          </div>
+
+                          <h3 className="font-extrabold text-slate-900 text-base leading-snug">{q.task}</h3>
+                          
+                          <div className="space-y-1 text-xs text-slate-600">
+                            <div><strong>日時：</strong>{q.date} {q.time}〜</div>
+                            <div><strong>場所：</strong>{q.location}</div>
+                            <div><strong>定員：</strong>{q.current} / {q.capacity} 名</div>
+                          </div>
+
+                          {/* 参加メンバー一覧 */}
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
+                            <div className="font-bold text-slate-700 flex items-center gap-1">
+                              <Icon name="users" size={13} />
+                              <span>参加者名一覧:</span>
+                            </div>
+                            <div className="text-slate-800 font-medium whitespace-pre-wrap pl-2">
+                              {q.applicantNames || "（まだ応募はありません）"}
+                            </div>
+                          </div>
+
+                          {/* 依頼者情報（事務局確認用） */}
+                          <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs space-y-0.5 text-amber-900">
+                            <div className="font-bold">依頼代表者: {q.repName} 様</div>
+                            <div>連絡先: <a href={`tel:${q.repPhone}`} className="underline font-bold">{q.repPhone}</a></div>
+                          </div>
+
+                          {q.briefingUrl && (
+                            <div className="text-xs">
+                              <a href={q.briefingUrl} target="_blank" rel="noopener noreferrer" className="text-brand-700 underline font-bold flex items-center gap-1">
+                                <Icon name="file-text" size={13} />
+                                <span>事前ブリーフィング資料</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            ) : currentTab === "past" ? (
+
+              /* === タブ②：過去活動履歴 === */
+              <div className="space-y-3">
+                <div className="text-xs font-bold text-slate-500">
+                  過去履歴: {filteredPast.length} 件
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                        <tr>
+                          <th className="p-3">ID</th>
+                          <th className="p-3">状態</th>
+                          <th className="p-3">活動日</th>
+                          <th className="p-3">内容</th>
+                          <th className="p-3">参加者</th>
+                          <th className="p-3">報告日時</th>
+                          <th className="p-3">実施状況</th>
+                          <th className="p-3">現場雰囲気</th>
+                          <th className="p-3">特記事項</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                        {filteredPast.length === 0 ? (
+                          <tr><td colSpan={9} className="p-6 text-center text-slate-400 font-bold">過去履歴データはありません。</td></tr>
+                        ) : (
+                          filteredPast.map((h, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50 transition">
+                              <td className="p-3 font-bold text-slate-500">{h.id}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                  h.status === "成立済" ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"
+                                }`}>
+                                  {h.status}
+                                </span>
+                              </td>
+                              <td className="p-3 whitespace-nowrap">{h.date}</td>
+                              <td className="p-3 font-bold max-w-xs truncate">{h.task}</td>
+                              <td className="p-3 whitespace-pre-wrap max-w-xs">{h.applicantNames || "-"}</td>
+                              <td className="p-3 whitespace-nowrap text-slate-500">{h.reportTime || "-"}</td>
+                              <td className="p-3 font-bold">
+                                {h.reportStatus === "無事完了" ? <span className="text-emerald-700 font-bold">🟢 無事完了</span> : (h.reportStatus || "-")}
+                              </td>
+                              <td className="p-3">{h.reportMood || "-"}</td>
+                              <td className="p-3 text-slate-600 max-w-xs truncate" title={h.reportNotes}>{h.reportNotes || "-"}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            ) : (
+
+              /* === タブ③：ボランティア名簿 === */
+              <div className="space-y-3">
+                <div className="text-xs font-bold text-slate-500">
+                  登録者総数: {filteredVolunteers.length} 名
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                        <tr>
+                          <th className="p-3">登録番号</th>
+                          <th className="p-3">氏名</th>
+                          <th className="p-3">お電話番号</th>
+                          <th className="p-3">LINE連携</th>
+                          <th className="p-3">LINE表示名</th>
+                          <th className="p-3">登録日時</th>
+                          <th className="p-3">状態</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                        {filteredVolunteers.length === 0 ? (
+                          <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-bold">該当するボランティアはいません。</td></tr>
+                        ) : (
+                          filteredVolunteers.map((v) => (
+                            <tr key={v.no} className="hover:bg-slate-50 transition">
+                              <td className="p-3 font-extrabold text-brand-700">{v.no}</td>
+                              <td className="p-3 font-bold text-slate-900 text-sm">{v.name} 様</td>
+                              <td className="p-3 font-semibold">
+                                <a href={`tel:${v.phone}`} className="hover:underline">{v.phone}</a>
+                              </td>
+                              <td className="p-3">
+                                {v.hasLine ? (
+                                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[11px]">
+                                    連携済
+                                  </span>
+                                ) : (
+                                  <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold text-[11px]">
+                                    未連携
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 text-slate-600">{v.lineDisplayName || "-"}</td>
+                              <td className="p-3 text-slate-500 whitespace-nowrap">{v.registeredAt}</td>
+                              <td className="p-3">
+                                <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-bold">
+                                  {v.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            )}
+          </main>
+
+          {/* トースト通知 */}
+          {toast.show && (
+            <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-slate-900 text-white text-xs py-3 px-4 rounded-xl shadow-xl flex items-center justify-between gap-2 border border-slate-800 font-bold">
+              <span>{toast.message}</span>
+              <button onClick={() => setToast({ show: false, message: "", type: "info" })} className="text-slate-400 hover:text-white">
+                <Icon name="x" size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<AdminApp />);
+  </script>
+</body>
+</html>
