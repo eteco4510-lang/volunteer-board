@@ -42,13 +42,13 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect } = React;
 
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
     // ★ご自身のGASウェブアプリURL（末尾 /exec）
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
 
-    // --- Lucide アイコン ラッパーコンポーネント ---
+    // --- Lucide アイコン ラッパー ---
     const Icon = ({ name, size = 18, className = "" }) => {
       useEffect(() => {
         if (window.lucide) {
@@ -58,18 +58,15 @@
       return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[1.75] ${className}`}></i>;
     };
 
-    // --- メインアプリケーション ---
     function App() {
       const [quests, setQuests] = useState([]);
       const [loading, setLoading] = useState(false);
       const [authVolunteer, setAuthVolunteer] = useState(null);
       const [lineUser, setLineUser] = useState({ id: "", name: "" });
       
-      // 画面状態
-      const [currentView, setCurrentView] = useState("list"); // "list" | "detail"
+      const [currentView, setCurrentView] = useState("list");
       const [selectedQuest, setSelectedQuest] = useState(null);
 
-      // モーダル・シート状態
       const [showRegisterModal, setShowRegisterModal] = useState(false);
       const [showApplyModal, setShowApplyModal] = useState(false);
       const [showApplicantsSheet, setShowApplicantsSheet] = useState(false);
@@ -77,14 +74,12 @@
       const [showReportModal, setShowReportModal] = useState(false);
       const [reportQuestId, setReportQuestId] = useState("");
 
-      // フォーム状態
       const [loginNo, setLoginNo] = useState("");
       const [loginPhone4, setLoginPhone4] = useState("");
       const [regName, setRegName] = useState("");
       const [regPhone, setRegPhone] = useState("");
       const [isSubmitting, setIsSubmitting] = useState(false);
 
-      // トースト通知状態
       const [toast, setToast] = useState({ show: false, message: "", type: "info" });
 
       const showToast = (message, type = "info") => {
@@ -94,26 +89,51 @@
         }, 4000);
       };
 
-      // API通信ラッパー
+      /**
+       * ★修正：iOS/Safari/LINE内ブラウザの Load failed を完全に防ぐ通信ラッパー
+       */
       const callApi = async (payload) => {
-        const parts = [];
-        for (const key in payload) {
-          if (Object.prototype.hasOwnProperty.call(payload, key)) {
-            const val = payload[key];
-            if (val !== undefined && val !== null) {
-              parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+        try {
+          const parts = [];
+          for (const key in payload) {
+            if (Object.prototype.hasOwnProperty.call(payload, key)) {
+              const val = payload[key];
+              if (val !== undefined && val !== null) {
+                parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+              }
             }
           }
+          // キャッシュバスターを追加（リダイレクト破棄防止）
+          parts.push("_t=" + Date.now());
+
+          const cleanBaseUrl = GAS_API_URL.trim();
+          const separator = cleanBaseUrl.includes("?") ? "&" : "?";
+          const finalUrl = cleanBaseUrl + separator + parts.join("&");
+
+          const response = await fetch(finalUrl, {
+            method: "GET",
+            mode: "cors",
+            redirect: "follow",
+            cache: "no-store"
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP通信エラー (${response.status})`);
+          }
+
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(result.error || "処理に失敗しました。");
+          }
+          return result.data;
+        } catch (err) {
+          if (err.message === "Load failed" || err.message === "Failed to fetch") {
+            throw new Error("サーバー通信に失敗しました。GASの公開権限が「全員」になっているかご確認ください。");
+          }
+          throw err;
         }
-        const url = GAS_API_URL + (GAS_API_URL.includes("?") ? "&" : "?") + parts.join("&");
-        const res = await fetch(url, { method: "GET" });
-        if (!res.ok) throw new Error(`通信エラー (${res.status})`);
-        const result = await res.json();
-        if (!result.success) throw new Error(result.error || "処理に失敗しました。");
-        return result.data;
       };
 
-      // 募集一覧取得
       const fetchQuests = async () => {
         setLoading(true);
         try {
@@ -126,7 +146,6 @@
         }
       };
 
-      // ログイン処理
       const handleLogin = async (no, phone4, isSilent = false) => {
         if (!no || !phone4) {
           if (!isSilent) showToast("登録番号と電話番号下4桁を入力してください。", "error");
@@ -136,8 +155,8 @@
         try {
           const res = await callApi({
             action: "login",
-            volunteerNo: no,
-            phoneLast4: phone4,
+            volunteerNo: no.trim(),
+            phoneLast4: phone4.trim(),
             lineUserId: lineUser.id || ""
           });
           setAuthVolunteer(res);
@@ -165,7 +184,6 @@
         showToast("認証を解除しました。", "info");
       };
 
-      // 新規登録処理
       const handleRegister = async () => {
         if (!regName.trim() || !regPhone.trim()) {
           showToast("お名前とお電話番号を入力してください。", "error");
@@ -192,7 +210,6 @@
         }
       };
 
-      // 立候補処理
       const handleApply = async () => {
         if (!selectedQuest || !authVolunteer) return;
         setIsSubmitting(true);
@@ -215,7 +232,6 @@
         }
       };
 
-      // 完了報告アンケート送信
       const handleReportSubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
@@ -243,7 +259,6 @@
         }
       };
 
-      // 初期化（LIFF & URLパラメータ判定）
       useEffect(() => {
         if (typeof liff !== "undefined" && MY_LIFF_ID) {
           liff.init({ liffId: MY_LIFF_ID }).then(() => {
@@ -283,7 +298,6 @@
 
       return (
         <div className="min-h-screen flex flex-col">
-          {/* スティッキーヘッダー */}
           <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
             <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -320,10 +334,7 @@
             </div>
           </header>
 
-          {/* メインコンテナ */}
           <main className="flex-1 max-w-2xl w-full mx-auto p-4 space-y-4">
-            
-            {/* 認証ステータス / ログインカード */}
             {!authVolunteer ? (
               <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
@@ -380,7 +391,6 @@
               </div>
             )}
 
-            {/* パンくずリスト（詳細表示時のみ） */}
             {currentView === "detail" && (
               <nav className="flex items-center gap-1.5 text-xs text-slate-500 py-1">
                 <button onClick={() => setCurrentView("list")} className="hover:text-slate-800 flex items-center gap-1">
@@ -392,9 +402,7 @@
               </nav>
             )}
 
-            {/* コンテンツ描画エリア */}
             {!authVolunteer ? (
-              /* 未認証時プレースホルダー */
               <div className="bg-white border border-slate-200 rounded-xl p-8 text-center space-y-2">
                 <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
                   <Icon name="lock" size={22} />
@@ -405,7 +413,6 @@
                 </p>
               </div>
             ) : loading ? (
-              /* スケルトンスクリーン */
               <div className="space-y-3">
                 {[1, 2, 3].map((n) => (
                   <div key={n} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 animate-pulse">
@@ -422,7 +429,6 @@
                 ))}
               </div>
             ) : currentView === "list" ? (
-              /* 募集一覧ビュー */
               <div className="space-y-3">
                 {quests.length === 0 ? (
                   <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
@@ -442,7 +448,6 @@
                             {q.task}
                           </h3>
                           
-                          {/* ★定員タップで立候補者シート展開 & 重複表現の是正 */}
                           <button
                             onClick={() => { setSheetQuest(q); setShowApplicantsSheet(true); }}
                             className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 transition ${
@@ -466,7 +471,6 @@
                             <span>{q.date} {q.time}〜</span>
                           </div>
                           
-                          {/* ★場所 & Google Mapsリンク */}
                           <div className="flex items-center gap-2">
                             <span className="flex items-center gap-1 font-semibold text-slate-500 w-12 shrink-0">
                               <Icon name="map-pin" size={13} /> 場所
@@ -512,7 +516,6 @@
                 )}
               </div>
             ) : (
-              /* ★詳細ページ（新設） */
               selectedQuest && (
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
@@ -585,7 +588,6 @@
                     )}
                   </div>
 
-                  {/* 詳細ページ内の固定立候補アクション */}
                   <div className="pt-4 border-t border-slate-100 flex gap-2">
                     <button
                       onClick={() => setCurrentView("list")}
@@ -611,7 +613,7 @@
             )}
           </main>
 
-          {/* ★ボトムシート：現在の立候補者リスト */}
+          {/* ボトムシート：立候補者リスト */}
           {showApplicantsSheet && sheetQuest && (
             <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm">
               <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-xl max-h-[80vh] flex flex-col">
@@ -746,7 +748,7 @@
             </div>
           )}
 
-          {/* 活動完了報告モーダル */}
+          {/* 完了報告モーダル */}
           {showReportModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
               <div className="bg-white w-full max-w-sm rounded-xl p-5 space-y-4 shadow-xl">
