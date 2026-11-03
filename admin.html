@@ -28,6 +28,17 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* 横スクロールバーをすっきり非表示（タッチ操作は可能） */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen text-[15px]">
   <div id="root"></div>
@@ -35,11 +46,8 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    // ★最新のGASウェブアプリURL
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
-    // ★ボランティア掲示板のLIFF URL
     const MY_LIFF_URL = "https://liff.line.me/2011743949-Sg6zYmMI";
-    // ★事務局ログイン用パスコード
     const ADMIN_PASSCODE = "1234";
 
     const Icon = ({ name, size = 18, className = "" }) => {
@@ -193,9 +201,6 @@
         }
       };
 
-      /**
-       * ★LINE配信用の募集促進文をクリップボードにコピー
-       */
       const copyLineRecruitText = (q) => {
         const remaining = Math.max(1, Number(q.capacity) - Number(q.current));
         const lineText = 
@@ -212,7 +217,7 @@
 ■ 備考：${q.notes || "特になし"}
 ━━━━━━━━━━━━━━
 
-▼ 詳細確認・立候補はこちら
+▼ 詳細確認・立候補はこちら（LINE内ですぐ開きます）
 ${MY_LIFF_URL}`;
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -327,93 +332,104 @@ ${MY_LIFF_URL}`;
 
       return (
         <div className="min-h-screen flex flex-col">
-          {/* ヘッダー */}
+          {/* ★ヘッダー（改行・はみ出し完全防止） */}
           <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold">
+            <div className="max-w-7xl mx-auto px-3.5 sm:px-6 h-16 flex items-center justify-between gap-2">
+              
+              {/* タイトル */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold shrink-0">
                   <Icon name="layout-dashboard" size={18} />
                 </div>
-                <div>
-                  <h1 className="font-extrabold text-slate-800 text-base leading-none">地域ボランティアセンター 事務局</h1>
-                  <span className="text-[11px] text-slate-400 font-medium">運行・募集管理ポータル</span>
+                <div className="min-w-0">
+                  <h1 className="font-extrabold text-slate-800 text-sm sm:text-base leading-tight whitespace-nowrap truncate">
+                    センター事務局ポータル
+                  </h1>
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                    運行・募集管理
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* 右側アクション（スマホでも折れないコンパクト設計） */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   disabled={actionLoading}
                   onClick={handleSyncRequests}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1.5 border border-slate-300"
+                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1 border border-slate-300 whitespace-nowrap"
+                  title="フォーム回答を手動同期"
                 >
-                  <Icon name="refresh-cw" size={14} className={actionLoading ? "animate-spin" : ""} />
-                  <span className="hidden sm:inline">フォーム回答を手動同期</span>
+                  <Icon name="refresh-cw" size={13} className={actionLoading ? "animate-spin" : ""} />
+                  <span className="hidden sm:inline">手動同期</span>
                   <span className="sm:hidden">同期</span>
                 </button>
                 <button
                   disabled={actionLoading}
                   onClick={handleArchiveQuests}
-                  className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-lg transition flex items-center gap-1.5 border border-emerald-300"
+                  className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-lg transition flex items-center gap-1 border border-emerald-300 whitespace-nowrap"
+                  title="終了・過去案件をアーカイブ"
                 >
-                  <Icon name="archive" size={14} />
-                  <span className="hidden sm:inline">終了案件をアーカイブ</span>
-                  <span className="sm:hidden">アーカイブ</span>
+                  <Icon name="archive" size={13} />
+                  <span className="hidden sm:inline">アーカイブ</span>
+                  <span className="sm:hidden">退避</span>
                 </button>
                 <button
                   onClick={() => { sessionStorage.removeItem("admin_auth"); setIsAuthenticated(false); }}
-                  className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition shrink-0"
                   title="ログアウト"
                 >
-                  <Icon name="log-out" size={18} />
+                  <Icon name="log-out" size={16} />
                 </button>
               </div>
             </div>
 
-            {/* タブナビゲーション */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-6 border-t border-slate-100 text-sm font-bold">
-              <button
-                onClick={() => { setCurrentTab("active"); setSearchQuery(""); }}
-                className={`py-3 border-b-2 flex items-center gap-2 transition ${
-                  currentTab === "active" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Icon name="clipboard-list" size={16} />
-                <span>ボランティア募集管理</span>
-                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
-                  {dashboardData.activeQuests.length}
-                </span>
-                {urgentCount > 0 && (
-                  <span className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[11px] font-extrabold animate-pulse">
-                    要対応 {urgentCount}
+            {/* ★タブナビゲーション（スマホでは横スクロールで改行を完全に防止） */}
+            <div className="border-t border-slate-100 bg-white">
+              <div className="max-w-7xl mx-auto px-3.5 sm:px-6 flex gap-3 sm:gap-6 overflow-x-auto no-scrollbar text-sm font-bold whitespace-nowrap">
+                <button
+                  onClick={() => { setCurrentTab("active"); setSearchQuery(""); }}
+                  className={`py-3 border-b-2 flex items-center gap-1.5 transition shrink-0 ${
+                    currentTab === "active" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Icon name="clipboard-list" size={15} />
+                  <span>ボランティア募集管理</span>
+                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-xs">
+                    {dashboardData.activeQuests.length}
                   </span>
-                )}
-              </button>
+                  {urgentCount > 0 && (
+                    <span className="bg-rose-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-extrabold animate-pulse">
+                      要対応 {urgentCount}
+                    </span>
+                  )}
+                </button>
 
-              <button
-                onClick={() => { setCurrentTab("past"); setSearchQuery(""); }}
-                className={`py-3 border-b-2 flex items-center gap-2 transition ${
-                  currentTab === "past" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Icon name="history" size={16} />
-                <span>過去活動履歴</span>
-                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
-                  {dashboardData.pastQuests.length}
-                </span>
-              </button>
+                <button
+                  onClick={() => { setCurrentTab("past"); setSearchQuery(""); }}
+                  className={`py-3 border-b-2 flex items-center gap-1.5 transition shrink-0 ${
+                    currentTab === "past" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Icon name="history" size={15} />
+                  <span>過去活動履歴</span>
+                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-xs">
+                    {dashboardData.pastQuests.length}
+                  </span>
+                </button>
 
-              <button
-                onClick={() => { setCurrentTab("roster"); setSearchQuery(""); }}
-                className={`py-3 border-b-2 flex items-center gap-2 transition ${
-                  currentTab === "roster" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Icon name="users" size={16} />
-                <span>ボランティア名簿</span>
-                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
-                  {dashboardData.volunteers.length}
-                </span>
-              </button>
+                <button
+                  onClick={() => { setCurrentTab("roster"); setSearchQuery(""); }}
+                  className={`py-3 border-b-2 flex items-center gap-1.5 transition shrink-0 ${
+                    currentTab === "roster" ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Icon name="users" size={15} />
+                  <span>ボランティア名簿</span>
+                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-xs">
+                    {dashboardData.volunteers.length}
+                  </span>
+                </button>
+              </div>
             </div>
           </header>
 
@@ -421,26 +437,26 @@ ${MY_LIFF_URL}`;
             
             {/* 検索・絞り込みバー */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-3 items-center justify-between">
-              <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                 <Icon name="search" size={16} className="text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="キーワード検索（ID、内容、場所、お名前など）"
+                  placeholder="検索（ID、内容、場所、お名前）"
                   className="w-full text-sm font-medium focus:outline-none"
                 />
               </div>
 
               {currentTab === "active" && (
-                <div className="flex items-center gap-2 shrink-0 text-xs">
+                <div className="flex items-center gap-1.5 shrink-0 text-xs">
                   <span className="text-slate-400 font-bold">状態:</span>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-700 bg-slate-50"
+                    className="border border-slate-300 rounded-lg px-2 py-1 font-bold text-slate-700 bg-slate-50 text-xs"
                   >
-                    <option value="all">すべて表示</option>
+                    <option value="all">すべて</option>
                     <option value="募集中">募集中のみ</option>
                     <option value="成立済">成立済のみ</option>
                   </select>
@@ -454,12 +470,12 @@ ${MY_LIFF_URL}`;
               
               /* === タブ①：ボランティア募集管理 === */
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500">
                   <div>該当件数: {sortedActive.length} 件（開催日が近い順）</div>
                   {urgentCount > 0 && (
-                    <div className="text-rose-600 flex items-center gap-1 font-extrabold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                      <Icon name="alert-triangle" size={14} />
-                      <span>活動日まで7日以内で定員未達の案件が {urgentCount} 件あります</span>
+                    <div className="text-rose-600 flex items-center gap-1 font-extrabold bg-rose-50 px-2 py-1 rounded-lg border border-rose-200">
+                      <Icon name="alert-triangle" size={13} />
+                      <span>7日以内・定員未達が {urgentCount} 件あります</span>
                     </div>
                   )}
                 </div>
@@ -479,15 +495,15 @@ ${MY_LIFF_URL}`;
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-xs font-extrabold text-slate-400">{q.id}</span>
                             
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
                               {q.isUrgent && (
-                                <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-500 text-white flex items-center gap-1 shadow-sm">
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-500 text-white flex items-center gap-1 shadow-sm whitespace-nowrap">
                                   <Icon name="alert-circle" size={12} />
                                   <span>あと{q.daysLeft}日 (未達)</span>
                                 </span>
                               )}
 
-                              <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
+                              <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border whitespace-nowrap ${
                                 q.status === "募集中" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
                                 q.status === "成立済" ? "bg-blue-50 text-blue-700 border-blue-300" :
                                 "bg-slate-100 text-slate-600 border-slate-300"
@@ -537,7 +553,7 @@ ${MY_LIFF_URL}`;
                           )}
                         </div>
 
-                        {/* ★1週間前アラート時のLINE配信用コピペボタン */}
+                        {/* LINE配信用コピペボタン */}
                         {q.isUrgent && (
                           <div className="pt-2 border-t border-rose-200 mt-2">
                             <button
@@ -568,15 +584,15 @@ ${MY_LIFF_URL}`;
                     <table className="w-full text-left text-xs border-collapse">
                       <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                         <tr>
-                          <th className="p-3">ID</th>
-                          <th className="p-3">状態</th>
-                          <th className="p-3">活動日 ▼</th>
-                          <th className="p-3">内容</th>
-                          <th className="p-3">参加者</th>
-                          <th className="p-3">報告日時</th>
-                          <th className="p-3">実施状況</th>
-                          <th className="p-3">現場雰囲気</th>
-                          <th className="p-3">特記事項</th>
+                          <th className="p-3 whitespace-nowrap">ID</th>
+                          <th className="p-3 whitespace-nowrap">状態</th>
+                          <th className="p-3 whitespace-nowrap">活動日 ▼</th>
+                          <th className="p-3 whitespace-nowrap">内容</th>
+                          <th className="p-3 whitespace-nowrap">参加者</th>
+                          <th className="p-3 whitespace-nowrap">報告日時</th>
+                          <th className="p-3 whitespace-nowrap">実施状況</th>
+                          <th className="p-3 whitespace-nowrap">現場雰囲気</th>
+                          <th className="p-3 whitespace-nowrap">特記事項</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
@@ -585,8 +601,8 @@ ${MY_LIFF_URL}`;
                         ) : (
                           sortedPast.map((h, idx) => (
                             <tr key={idx} className="hover:bg-slate-50 transition">
-                              <td className="p-3 font-bold text-slate-500">{h.id}</td>
-                              <td className="p-3">
+                              <td className="p-3 font-bold text-slate-500 whitespace-nowrap">{h.id}</td>
+                              <td className="p-3 whitespace-nowrap">
                                 <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                                   h.status === "成立済" ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"
                                 }`}>
@@ -597,10 +613,10 @@ ${MY_LIFF_URL}`;
                               <td className="p-3 font-bold max-w-xs truncate">{h.task}</td>
                               <td className="p-3 whitespace-pre-wrap max-w-xs">{h.applicantNames || "-"}</td>
                               <td className="p-3 whitespace-nowrap text-slate-500">{h.reportTime || "-"}</td>
-                              <td className="p-3 font-bold">
+                              <td className="p-3 font-bold whitespace-nowrap">
                                 {h.reportStatus === "無事完了" ? <span className="text-emerald-700 font-bold">🟢 無事完了</span> : (h.reportStatus || "-")}
                               </td>
-                              <td className="p-3">{h.reportMood || "-"}</td>
+                              <td className="p-3 whitespace-nowrap">{h.reportMood || "-"}</td>
                               <td className="p-3 text-slate-600 max-w-xs truncate" title={h.reportNotes}>{h.reportNotes || "-"}</td>
                             </tr>
                           ))
@@ -624,13 +640,13 @@ ${MY_LIFF_URL}`;
                     <table className="w-full text-left text-xs border-collapse">
                       <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                         <tr>
-                          <th className="p-3">登録番号</th>
-                          <th className="p-3">氏名</th>
-                          <th className="p-3">お電話番号</th>
-                          <th className="p-3">LINE連携</th>
-                          <th className="p-3">LINE表示名</th>
-                          <th className="p-3">登録日時</th>
-                          <th className="p-3">状態</th>
+                          <th className="p-3 whitespace-nowrap">登録番号</th>
+                          <th className="p-3 whitespace-nowrap">氏名</th>
+                          <th className="p-3 whitespace-nowrap">お電話番号</th>
+                          <th className="p-3 whitespace-nowrap">LINE連携</th>
+                          <th className="p-3 whitespace-nowrap">LINE表示名</th>
+                          <th className="p-3 whitespace-nowrap">登録日時</th>
+                          <th className="p-3 whitespace-nowrap">状態</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
@@ -639,12 +655,12 @@ ${MY_LIFF_URL}`;
                         ) : (
                           filteredVolunteers.map((v) => (
                             <tr key={v.no} className="hover:bg-slate-50 transition">
-                              <td className="p-3 font-extrabold text-brand-700">{v.no}</td>
-                              <td className="p-3 font-bold text-slate-900 text-sm">{v.name} 様</td>
-                              <td className="p-3 font-semibold">
+                              <td className="p-3 font-extrabold text-brand-700 whitespace-nowrap">{v.no}</td>
+                              <td className="p-3 font-bold text-slate-900 text-sm whitespace-nowrap">{v.name} 様</td>
+                              <td className="p-3 font-semibold whitespace-nowrap">
                                 <a href={`tel:${v.phone}`} className="hover:underline">{v.phone}</a>
                               </td>
-                              <td className="p-3">
+                              <td className="p-3 whitespace-nowrap">
                                 {v.hasLine ? (
                                   <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[11px]">
                                     連携済
@@ -655,9 +671,9 @@ ${MY_LIFF_URL}`;
                                   </span>
                                 )}
                               </td>
-                              <td className="p-3 text-slate-600">{v.lineDisplayName || "-"}</td>
+                              <td className="p-3 text-slate-600 whitespace-nowrap">{v.lineDisplayName || "-"}</td>
                               <td className="p-3 text-slate-500 whitespace-nowrap">{v.registeredAt}</td>
-                              <td className="p-3">
+                              <td className="p-3 whitespace-nowrap">
                                 <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-bold">
                                   {v.status}
                                 </span>
