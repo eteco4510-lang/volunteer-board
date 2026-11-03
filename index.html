@@ -46,7 +46,7 @@
 
     const MY_LIFF_ID = "2011743949-Sg6zYmMI";
     // ★ご自身のGASウェブアプリURL（末尾 /exec）
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzxxxx.../exec";
 
     // --- Lucide アイコン ラッパー ---
     const Icon = ({ name, size = 18, className = "" }) => {
@@ -57,6 +57,60 @@
       }, [name]);
       return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[1.75] ${className}`}></i>;
     };
+
+    /**
+     * ★Safari / LINEブラウザの Load failed を100%解決する JSONP 通信関数
+     */
+    function callApiViaJsonp(payload) {
+      return new Promise((resolve, reject) => {
+        const callbackName = "gas_cb_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+        const script = document.createElement("script");
+
+        // タイムアウト監視（12秒）
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("通信がタイムアウトしました。電波環境をお確かめください。"));
+        }, 12000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+        }
+
+        window[callbackName] = function(response) {
+          cleanup();
+          if (response && response.success) {
+            resolve(response.data);
+          } else {
+            reject(new Error((response && response.error) ? response.error : "処理に失敗しました。"));
+          }
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error("サーバー接続に失敗しました。GASの権限が「全員」になっているかご確認ください。"));
+        };
+
+        const parts = [];
+        for (const key in payload) {
+          if (Object.prototype.hasOwnProperty.call(payload, key)) {
+            const val = payload[key];
+            if (val !== undefined && val !== null) {
+              parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+            }
+          }
+        }
+        parts.push("callback=" + callbackName);
+        parts.push("_t=" + Date.now());
+
+        const baseUrl = GAS_API_URL.trim();
+        const sep = baseUrl.includes("?") ? "&" : "?";
+        script.src = baseUrl + sep + parts.join("&");
+
+        document.head.appendChild(script);
+      });
+    }
 
     function App() {
       const [quests, setQuests] = useState([]);
@@ -89,55 +143,10 @@
         }, 4000);
       };
 
-      /**
-       * ★修正：iOS/Safari/LINE内ブラウザの Load failed を完全に防ぐ通信ラッパー
-       */
-      const callApi = async (payload) => {
-        try {
-          const parts = [];
-          for (const key in payload) {
-            if (Object.prototype.hasOwnProperty.call(payload, key)) {
-              const val = payload[key];
-              if (val !== undefined && val !== null) {
-                parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
-              }
-            }
-          }
-          // キャッシュバスターを追加（リダイレクト破棄防止）
-          parts.push("_t=" + Date.now());
-
-          const cleanBaseUrl = GAS_API_URL.trim();
-          const separator = cleanBaseUrl.includes("?") ? "&" : "?";
-          const finalUrl = cleanBaseUrl + separator + parts.join("&");
-
-          const response = await fetch(finalUrl, {
-            method: "GET",
-            mode: "cors",
-            redirect: "follow",
-            cache: "no-store"
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP通信エラー (${response.status})`);
-          }
-
-          const result = await response.json();
-          if (!result.success) {
-            throw new Error(result.error || "処理に失敗しました。");
-          }
-          return result.data;
-        } catch (err) {
-          if (err.message === "Load failed" || err.message === "Failed to fetch") {
-            throw new Error("サーバー通信に失敗しました。GASの公開権限が「全員」になっているかご確認ください。");
-          }
-          throw err;
-        }
-      };
-
       const fetchQuests = async () => {
         setLoading(true);
         try {
-          const data = await callApi({ action: "getOpenQuests" });
+          const data = await callApiViaJsonp({ action: "getOpenQuests" });
           setQuests(data || []);
         } catch (err) {
           showToast(err.message, "error");
@@ -153,7 +162,7 @@
         }
         setIsSubmitting(true);
         try {
-          const res = await callApi({
+          const res = await callApiViaJsonp({
             action: "login",
             volunteerNo: no.trim(),
             phoneLast4: phone4.trim(),
@@ -191,7 +200,7 @@
         }
         setIsSubmitting(true);
         try {
-          const res = await callApi({
+          const res = await callApiViaJsonp({
             action: "register",
             lineUserId: lineUser.id || "未取得",
             lineDisplayName: lineUser.name || regName.trim(),
@@ -214,7 +223,7 @@
         if (!selectedQuest || !authVolunteer) return;
         setIsSubmitting(true);
         try {
-          await callApi({
+          await callApiViaJsonp({
             action: "apply",
             reqId: selectedQuest.id,
             volunteerNo: authVolunteer.volunteerNo,
@@ -237,7 +246,7 @@
         const fd = new FormData(e.target);
         setIsSubmitting(true);
         try {
-          await callApi({
+          await callApiViaJsonp({
             action: "submitReport",
             reqId: reportQuestId,
             volunteerNo: authVolunteer.volunteerNo,
