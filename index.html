@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="no-referrer">
   <title>地域ボランティア募集 掲示板</title>
   
-  <!-- Tailwind CSS & React / Babel / Lucide / LIFF CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -48,7 +48,6 @@
     // ★ご自身のGASウェブアプリURL（末尾 /exec）
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
 
-    // --- Lucide アイコン ラッパー ---
     const Icon = ({ name, size = 18, className = "" }) => {
       useEffect(() => {
         if (window.lucide) {
@@ -59,17 +58,49 @@
     };
 
     /**
-     * ★Safari / LINEブラウザの Load failed を100%解決する JSONP 通信関数
+     * ★堅牢デュアル通信エンジン（fetch & JSONPハイブリッド）
      */
-    function callApiViaJsonp(payload) {
-      return new Promise((resolve, reject) => {
-        const callbackName = "gas_cb_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
-        const script = document.createElement("script");
+    async function requestGas(payload) {
+      const parts = [];
+      for (const key in payload) {
+        if (Object.prototype.hasOwnProperty.call(payload, key)) {
+          const val = payload[key];
+          if (val !== undefined && val !== null) {
+            parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+          }
+        }
+      }
+      parts.push("_ts=" + Date.now());
 
-        // タイムアウト監視（12秒）
+      const cleanUrl = GAS_API_URL.trim();
+      const sep = cleanUrl.includes("?") ? "&" : "?";
+      const fetchUrl = cleanUrl + sep + parts.join("&");
+
+      // 試行1: 標準fetch
+      try {
+        const res = await fetch(fetchUrl, {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) return json.data;
+          throw new Error(json.error || "処理に失敗しました。");
+        }
+      } catch (e) {
+        // fetchが失敗した場合は試行2（JSONP）へフォールバック
+      }
+
+      // 試行2: JSONP完全フォールバック
+      return new Promise((resolve, reject) => {
+        const callbackName = "cb_" + Math.random().toString(36).substring(2, 8) + "_" + Date.now();
+        const script = document.createElement("script");
+        script.referrerPolicy = "no-referrer";
+        script.crossOrigin = "anonymous";
+
         const timer = setTimeout(() => {
           cleanup();
-          reject(new Error("通信がタイムアウトしました。電波環境をお確かめください。"));
+          reject(new Error("通信がタイムアウトしました。電波状況をご確認ください。"));
         }, 12000);
 
         function cleanup() {
@@ -78,36 +109,21 @@
           delete window[callbackName];
         }
 
-        window[callbackName] = function(response) {
+        window[callbackName] = function(data) {
           cleanup();
-          if (response && response.success) {
-            resolve(response.data);
+          if (data && data.success) {
+            resolve(data.data);
           } else {
-            reject(new Error((response && response.error) ? response.error : "処理に失敗しました。"));
+            reject(new Error((data && data.error) ? data.error : "処理に失敗しました。"));
           }
         };
 
         script.onerror = function() {
           cleanup();
-          reject(new Error("サーバー接続に失敗しました。GASの権限が「全員」になっているかご確認ください。"));
+          reject(new Error("サーバー通信エラーが発生しました。ブラウザのキャッシュをクリアして再試行してください。"));
         };
 
-        const parts = [];
-        for (const key in payload) {
-          if (Object.prototype.hasOwnProperty.call(payload, key)) {
-            const val = payload[key];
-            if (val !== undefined && val !== null) {
-              parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
-            }
-          }
-        }
-        parts.push("callback=" + callbackName);
-        parts.push("_t=" + Date.now());
-
-        const baseUrl = GAS_API_URL.trim();
-        const sep = baseUrl.includes("?") ? "&" : "?";
-        script.src = baseUrl + sep + parts.join("&");
-
+        script.src = fetchUrl + "&callback=" + callbackName;
         document.head.appendChild(script);
       });
     }
@@ -146,7 +162,7 @@
       const fetchQuests = async () => {
         setLoading(true);
         try {
-          const data = await callApiViaJsonp({ action: "getOpenQuests" });
+          const data = await requestGas({ action: "getOpenQuests" });
           setQuests(data || []);
         } catch (err) {
           showToast(err.message, "error");
@@ -162,7 +178,7 @@
         }
         setIsSubmitting(true);
         try {
-          const res = await callApiViaJsonp({
+          const res = await requestGas({
             action: "login",
             volunteerNo: no.trim(),
             phoneLast4: phone4.trim(),
@@ -200,7 +216,7 @@
         }
         setIsSubmitting(true);
         try {
-          const res = await callApiViaJsonp({
+          const res = await requestGas({
             action: "register",
             lineUserId: lineUser.id || "未取得",
             lineDisplayName: lineUser.name || regName.trim(),
@@ -223,7 +239,7 @@
         if (!selectedQuest || !authVolunteer) return;
         setIsSubmitting(true);
         try {
-          await callApiViaJsonp({
+          await requestGas({
             action: "apply",
             reqId: selectedQuest.id,
             volunteerNo: authVolunteer.volunteerNo,
@@ -246,7 +262,7 @@
         const fd = new FormData(e.target);
         setIsSubmitting(true);
         try {
-          await callApiViaJsonp({
+          await requestGas({
             action: "submitReport",
             reqId: reportQuestId,
             volunteerNo: authVolunteer.volunteerNo,
@@ -818,7 +834,6 @@
             </div>
           )}
 
-          {/* トースト通知 */}
           {toast.show && (
             <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-slate-900 text-white text-xs py-3 px-4 rounded-xl shadow-lg flex items-center justify-between gap-2 border border-slate-800 transition-all">
               <span>{toast.message}</span>
