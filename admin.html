@@ -37,6 +37,8 @@
 
     // ★最新のGASウェブアプリURL
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    // ★ボランティア掲示板のLIFF URL
+    const MY_LIFF_URL = "https://liff.line.me/2011743949-Sg6zYmMI";
     // ★事務局ログイン用パスコード
     const ADMIN_PASSCODE = "1234";
 
@@ -49,18 +51,12 @@
       return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[2] ${className}`}></i>;
     };
 
-    /**
-     * 日付文字列（YYYY/MM/DD等）をタイムスタンプに変換
-     */
     function parseDateToTime(dateStr) {
       if (!dateStr) return 0;
       const d = new Date(String(dateStr).replace(/-/g, "/"));
       return isNaN(d.getTime()) ? 0 : d.getTime();
     }
 
-    /**
-     * 今日から活動希望日までの残り日数を計算
-     */
     function getDaysUntil(dateStr) {
       if (!dateStr) return 999;
       const act = new Date(String(dateStr).replace(/-/g, "/"));
@@ -74,9 +70,6 @@
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
-    /**
-     * JSONP通信エンジン
-     */
     function requestGas(payload) {
       return new Promise((resolve, reject) => {
         const callbackName = "admin_cb_" + Math.random().toString(36).substring(2, 8) + "_" + Date.now();
@@ -200,6 +193,55 @@
         }
       };
 
+      /**
+       * ★LINE配信用の募集促進文をクリップボードにコピー
+       */
+      const copyLineRecruitText = (q) => {
+        const remaining = Math.max(1, Number(q.capacity) - Number(q.current));
+        const lineText = 
+`【急募】ボランティア参加のお願い
+
+活動日が近づいておりますが、まだ定員に達しておりません。
+地域の助け合いに、皆さまの温かいご協力をよろしくお願いいたします！
+
+━━━━━━━━━━━━━━
+■ 依頼内容：${q.task}
+■ 活動日時：${q.date} ${q.time}〜
+■ 活動場所：${q.location}
+■ 募集人数：あと${remaining}名（定員${q.capacity}名）
+■ 備考：${q.notes || "特になし"}
+━━━━━━━━━━━━━━
+
+▼ 詳細確認・立候補はこちら（LINE内ですぐ開きます）
+${MY_LIFF_URL}`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(lineText).then(() => {
+            showToast("LINE配信用テキストをコピーしました！", "success");
+          }).catch(() => {
+            fallbackCopyText(lineText);
+          });
+        } else {
+          fallbackCopyText(lineText);
+        }
+      };
+
+      const fallbackCopyText = (text) => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast("LINE配信用テキストをコピーしました！", "success");
+        } catch (err) {
+          showToast("コピーに失敗しました。手動でコピーしてください。", "error");
+        }
+        document.body.removeChild(textArea);
+      };
+
       useEffect(() => {
         if (sessionStorage.getItem("admin_auth") === "true") {
           setIsAuthenticated(true);
@@ -207,7 +249,6 @@
         }
       }, []);
 
-      // ★募集管理：日付昇順（直近が上）＋ 1週間前アラート判定
       const { sortedActive, urgentCount } = useMemo(() => {
         let urgent = 0;
         const list = (dashboardData.activeQuests || []).map(q => {
@@ -227,13 +268,10 @@
           return matchStatus && matchQuery;
         });
 
-        // 昇順（活動日が近い順）
         filtered.sort((a, b) => parseDateToTime(a.date) - parseDateToTime(b.date));
-
         return { sortedActive: filtered, urgentCount: urgent };
       }, [dashboardData.activeQuests, statusFilter, searchQuery]);
 
-      // ★過去履歴：日付降順（新しい日付が上）
       const sortedPast = useMemo(() => {
         const filtered = (dashboardData.pastQuests || []).filter(q => {
           return !searchQuery || 
@@ -242,7 +280,6 @@
             q.id.includes(searchQuery);
         });
 
-        // 降順（新しい実績順）
         filtered.sort((a, b) => parseDateToTime(b.date) - parseDateToTime(a.date));
         return filtered;
       }, [dashboardData.pastQuests, searchQuery]);
@@ -415,7 +452,7 @@
               <div className="text-center py-20 text-slate-400 font-bold">データを読み込み中...</div>
             ) : currentTab === "active" ? (
               
-              /* === タブ①：ボランティア募集管理（日付昇順＆1週間前アラート） === */
+              /* === タブ①：ボランティア募集管理 === */
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                   <div>該当件数: {sortedActive.length} 件（開催日が近い順）</div>
@@ -443,7 +480,6 @@
                             <span className="text-xs font-extrabold text-slate-400">{q.id}</span>
                             
                             <div className="flex items-center gap-1.5">
-                              {/* ★1週間前アラートバッジ */}
                               {q.isUrgent && (
                                 <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-500 text-white flex items-center gap-1 shadow-sm">
                                   <Icon name="alert-circle" size={12} />
@@ -500,6 +536,19 @@
                             </div>
                           )}
                         </div>
+
+                        {/* ★1週間前アラート時のLINE配信用コピペボタン */}
+                        {q.isUrgent && (
+                          <div className="pt-2 border-t border-rose-200 mt-2">
+                            <button
+                              onClick={() => copyLineRecruitText(q)}
+                              className="w-full py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              <Icon name="copy" size={14} />
+                              <span>LINE募集文をコピー</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -508,7 +557,7 @@
 
             ) : currentTab === "past" ? (
 
-              /* === タブ②：過去活動履歴（日付降順：新しい順） === */
+              /* === タブ②：過去活動履歴 === */
               <div className="space-y-3">
                 <div className="text-xs font-bold text-slate-500">
                   過去履歴: {sortedPast.length} 件（最新実績順）
