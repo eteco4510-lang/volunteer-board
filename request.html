@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="no-referrer">
+  <title>新規ボランティア依頼登録 | コーディネーター専用</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen text-[15px]">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ★最新のGASウェブアプリURL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5UmwjELFqFHJneJuxX9mLTmzTdqRLILa98HUAGiwXfNPscqmqP0TuWZNZVYK8C2jbJA/exec";
+    // ★事務局・コーディネーター共通パスコード
+    const ADMIN_PASSCODE = "1234";
+
+    const Icon = ({ name, size = 18, className = "" }) => {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [name]);
+      return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block shrink-0 stroke-[2] ${className}`}></i>;
+    };
+
+    /**
+     * JSONP通信エンジン
+     */
+    function requestGas(payload) {
+      return new Promise((resolve, reject) => {
+        const callbackName = "req_cb_" + Math.random().toString(36).substring(2, 8) + "_" + Date.now();
+        const script = document.createElement("script");
+        script.referrerPolicy = "no-referrer";
+        script.crossOrigin = "anonymous";
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("通信がタイムアウトしました。電波状況をご確認ください。"));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          if (data && data.success) {
+            resolve(data.data);
+          } else {
+            reject(new Error((data && data.error) ? data.error : "処理に失敗しました。"));
+          }
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error("サーバー通信エラーが発生しました。"));
+        };
+
+        const parts = [];
+        for (const key in payload) {
+          if (Object.prototype.hasOwnProperty.call(payload, key)) {
+            const val = payload[key];
+            if (val !== undefined && val !== null) {
+              parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val)));
+            }
+          }
+        }
+        parts.push("callback=" + callbackName);
+        parts.push("_ts=" + Date.now());
+
+        const baseUrl = GAS_API_URL.trim();
+        const sep = baseUrl.includes("?") ? "&" : "?";
+        script.src = baseUrl + sep + parts.join("&");
+
+        document.head.appendChild(script);
+      });
+    }
+
+    // 定型チップデータ
+    const TASK_PRESETS = [
+      "草むしり・落ち葉掃き",
+      "買い物代行・同行",
+      "粗大ゴミ・不用品搬出補助",
+      "電球交換・高い所の作業",
+      "スマホ・パソコン操作補助",
+      "見守り・話し相手"
+    ];
+
+    const TIME_PRESETS = ["09:00", "09:30", "10:00", "13:00", "13:30", "14:00"];
+
+    const NOTE_PRESETS = [
+      "軍手・タオルをご持参ください。",
+      "雨天の場合は中止となります（当日朝に判断・連絡）。",
+      "現地に駐車スペースがあります。",
+      "動きやすく汚れてもよい服装でお越しください。"
+    ];
+
+    function RequestFormApp() {
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [inputPass, setInputPass] = useState("");
+
+      // フォーム入力状態
+      const [task, setTask] = useState("");
+      const [capacity, setCapacity] = useState(1);
+      const [policy, setPolicy] = useState("1名でも決行");
+      const [date, setDate] = useState("");
+      const [time, setTime] = useState("10:00");
+      const [location, setLocation] = useState("");
+      const [repName, setRepName] = useState("");
+      const [repPhone, setRepPhone] = useState("");
+      const [repEmail, setRepEmail] = useState("");
+      const [notes, setNotes] = useState("");
+      const [briefingUrl, setBriefingUrl] = useState("");
+      const [coordinator, setCoordinator] = useState("");
+
+      // UI制御状態
+      const [showPreviewModal, setShowPreviewModal] = useState(false);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [completedResult, setCompletedResult] = useState(null);
+      const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+
+      const showToast = (message, type = "info") => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: "", type: "info" }), 4000);
+      };
+
+      // 今日の日付（YYYY-MM-DD）を最小日付として取得
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      useEffect(() => {
+        if (sessionStorage.getItem("admin_auth") === "true") {
+          setIsAuthenticated(true);
+        }
+        const savedCoord = localStorage.getItem("saved_coordinator_name");
+        if (savedCoord) setCoordinator(savedCoord);
+      }, []);
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        if (inputPass === ADMIN_PASSCODE) {
+          setIsAuthenticated(true);
+          sessionStorage.setItem("admin_auth", "true");
+        } else {
+          alert("パスコードが正しくありません。");
+        }
+      };
+
+      const appendNotePreset = (preset) => {
+        setNotes((prev) => (prev ? `${prev}\n${preset}` : preset));
+      };
+
+      const handleOpenPreview = (e) => {
+        e.preventDefault();
+        if (!task.trim() || !date || !time || !location.trim() || !repName.trim() || !repPhone.trim()) {
+          showToast("必須項目をすべて入力してください。", "error");
+          return;
+        }
+        setShowPreviewModal(true);
+      };
+
+      const handleSubmitRequest = async () => {
+        setIsSubmitting(true);
+        try {
+          if (coordinator.trim()) {
+            localStorage.setItem("saved_coordinator_name", coordinator.trim());
+          }
+          const res = await requestGas({
+            action: "createRequest",
+            task: task.trim(),
+            date: date,
+            time: time,
+            location: location.trim(),
+            capacity: capacity,
+            policy: policy,
+            repName: repName.trim(),
+            repPhone: repPhone.trim(),
+            repEmail: repEmail.trim(),
+            notes: notes.trim(),
+            briefingUrl: briefingUrl.trim(),
+            coordinator: coordinator.trim()
+          });
+
+          setShowPreviewModal(false);
+          setCompletedResult(res);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleResetForNext = () => {
+        setTask("");
+        setCapacity(1);
+        setPolicy("1名でも決行");
+        setDate("");
+        setTime("10:00");
+        setLocation("");
+        setRepName("");
+        setRepPhone("");
+        setRepEmail("");
+        setNotes("");
+        setBriefingUrl("");
+        setCompletedResult(null);
+      };
+
+      // 未認証画面
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+            <div className="bg-white border-2 border-slate-300 rounded-2xl p-8 max-w-sm w-full shadow-lg text-center space-y-5">
+              <div className="w-14 h-14 bg-brand-50 text-brand-700 rounded-2xl flex items-center justify-center mx-auto border border-brand-200">
+                <Icon name="file-plus-2" size={28} />
+              </div>
+              <div>
+                <h1 className="text-xl font-extrabold text-slate-800">コーディネーター専用窓口</h1>
+                <p className="text-xs text-slate-500 mt-1">新規ボランティア依頼の登録フォーム</p>
+              </div>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <input
+                  type="password"
+                  value={inputPass}
+                  onChange={(e) => setInputPass(e.target.value)}
+                  placeholder="事務局パスコードを入力"
+                  className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl text-center text-lg font-bold tracking-widest focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow transition"
+                >
+                  認証して入力画面へ
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col pb-12">
+          {/* スティッキーヘッダー */}
+          <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+            <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-sm">
+                  <Icon name="file-plus-2" size={20} />
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-slate-800 text-base leading-tight">新規ボランティア依頼登録</h1>
+                  <span className="text-[11px] text-slate-500 font-medium">コーディネーター受付フォーム</span>
+                </div>
+              </div>
+
+              <a
+                href="./admin.html"
+                className="text-xs px-3 py-2 font-bold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition border border-slate-300"
+              >
+                <Icon name="layout-dashboard" size={14} />
+                <span>管理画面</span>
+              </a>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-2xl w-full mx-auto p-4 space-y-6">
+            {/* 登録完了画面 */}
+            {completedResult ? (
+              <div className="bg-white border-2 border-brand-500 rounded-2xl p-6 sm:p-8 shadow-md text-center space-y-5">
+                <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto border-2 border-brand-200">
+                  <Icon name="check-circle-2" size={36} />
+                </div>
+                <div className="space-y-1">
+                  <span className="inline-block bg-brand-100 text-brand-800 text-xs font-extrabold px-3 py-1 rounded-full">
+                    掲示板へ即時公開されました
+                  </span>
+                  <h2 className="text-2xl font-extrabold text-slate-900 pt-2">
+                    受付番号：{completedResult.reqId}
+                  </h2>
+                  <p className="text-sm text-slate-600 font-medium pt-1">
+                    「{completedResult.task}」（{completedResult.date} {completedResult.time}〜）の募集を開始しました。
+                  </p>
+                </div>
+
+                <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={handleResetForNext}
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Icon name="plus-circle" size={18} />
+                    <span>続けて別の依頼を登録</span>
+                  </button>
+                  <a
+                    href="./admin.html"
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 border border-slate-300"
+                  >
+                    <Icon name="layout-dashboard" size={18} />
+                    <span>事務局ポータルで確認</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              /* 入力フォーム本体 */
+              <form onSubmit={handleOpenPreview} className="space-y-6">
+                
+                {/* ブロック1：活動内容・募集条件 */}
+                <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">1</span>
+                    <h2 className="font-extrabold text-slate-800 text-base">活動内容・募集人数</h2>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-slate-700">
+                      依頼内容（掲示板のタイトル） <span className="text-rose-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={task}
+                      onChange={(e) => setTask(e.target.value)}
+                      placeholder="例：庭の草むしりと落ち葉掃き"
+                      className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {TASK_PRESETS.map((preset) => (
+                        <button
+                          type="button"
+                          key={preset}
+                          onClick={() => setTask(preset)}
+                          className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 transition"
+                        >
+                          + {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-bold text-slate-700">
+                        必要人数（定員） <span className="text-rose-600">*</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4].map((num) => (
+                          <button
+                            type="button"
+                            key={num}
+                            onClick={() => setCapacity(num)}
+                            className={`flex-1 py-2.5 rounded-xl font-bold text-sm border-2 transition ${
+                              capacity === num
+                                ? "bg-brand-50 border-brand-600 text-brand-800"
+                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {num}名
+                          </button>
+                        ))}
+                        <input
+                          type="number"
+                          min="1"
+                          max="50"
+                          value={capacity}
+                          onChange={(e) => setCapacity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          className="w-16 py-2.5 px-2 text-center border-2 border-slate-300 rounded-xl font-bold text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-bold text-slate-700">
+                        定員未達時の対応方針
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["1名でも決行", "全員集まれば決行"].map((opt) => (
+                          <button
+                            type="button"
+                            key={opt}
+                            onClick={() => setPolicy(opt)}
+                            className={`py-2.5 px-2 rounded-xl font-bold text-xs border-2 transition ${
+                              policy === opt
+                                ? "bg-brand-50 border-brand-600 text-brand-800"
+                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* ブロック2：日時・活動場所 */}
+                <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">2</span>
+                    <h2 className="font-extrabold text-slate-800 text-base">活動日時・集合場所</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-bold text-slate-700">
+                        活動希望日 <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        min={todayStr}
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-base font-bold bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-bold text-slate-700">
+                        開始時間 <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-base font-bold bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {TIME_PRESETS.map((t) => (
+                          <button
+                            type="button"
+                            key={t}
+                            onClick={() => setTime(t)}
+                            className={`text-xs px-2 py-1 rounded font-bold border ${
+                              time === t ? "bg-slate-800 text-white border-slate-800" : "bg-slate-100 text-slate-600 border-slate-200"
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-bold text-slate-700">
+                        活動場所（住所・施設名） <span className="text-rose-600">*</span>
+                      </label>
+                      {location.trim() && (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.trim())}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-brand-700 font-bold underline flex items-center gap-1"
+                        >
+                          <Icon name="map-pin" size={13} />
+                          <span>地図で位置を確認</span>
+                        </a>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="例：相模原市中央区中央1-1-1（〇〇様宅）"
+                      className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+                </section>
+
+                {/* ブロック3：依頼者連絡先（非公開情報） */}
+                <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">3</span>
+                      <h2 className="font-extrabold text-slate-800 text-base">依頼者連絡先</h2>
+                    </div>
+                    <span className="text-[11px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">
+                      確定者のみにLINE通知
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-bold text-slate-700">
+                        依頼代表者名 <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={repName}
+                        onChange={(e) => setRepName(e.target.value)}
+                        placeholder="例：相模 花子"
+                        className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-bold text-slate-700">
+                        お電話番号 <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        required
+                        value={repPhone}
+                        onChange={(e) => setRepPhone(e.target.value)}
+                        placeholder="例：042-700-0000"
+                        className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-700">
+                      成立通知用メールアドレス（任意）
+                    </label>
+                    <input
+                      type="email"
+                      value={repEmail}
+                      onChange={(e) => setRepEmail(e.target.value)}
+                      placeholder="例：example@email.com（空欄可）"
+                      className="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+                </section>
+
+                {/* ブロック4：備考・事前資料・受付担当 */}
+                <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">4</span>
+                    <h2 className="font-extrabold text-slate-800 text-base">詳細備考・事前資料URL</h2>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-slate-700">
+                      備考・持ち物・注意事項（掲示板に公開されます）
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="持ち物や集合時の目印などを入力してください"
+                      className="w-full px-3.5 py-3 border-2 border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    ></textarea>
+                    <div className="flex flex-wrap gap-1.5">
+                      {NOTE_PRESETS.map((np) => (
+                        <button
+                          type="button"
+                          key={np}
+                          onClick={() => appendNotePreset(np)}
+                          className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg border border-slate-200 transition"
+                        >
+                          + {np.slice(0, 12)}…
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-700">
+                      事前ブリーフィング資料・現場写真URL（任意）
+                    </label>
+                    <input
+                      type="url"
+                      value={briefingUrl}
+                      onChange={(e) => setBriefingUrl(e.target.value)}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                    <label className="block text-xs font-bold text-slate-500">
+                      受付コーディネーター名（任意・記録用）
+                    </label>
+                    <input
+                      type="text"
+                      value={coordinator}
+                      onChange={(e) => setCoordinator(e.target.value)}
+                      placeholder="例：新倉"
+                      className="w-full sm:w-1/2 px-3 py-2 border border-slate-300 rounded-lg text-sm font-medium bg-slate-50"
+                    />
+                  </div>
+                </section>
+
+                {/* 送信ボタン */}
+                <button
+                  type="submit"
+                  className="w-full bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-lg py-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2"
+                >
+                  <Icon name="eye" size={20} />
+                  <span>入力内容を確認して公開する</span>
+                </button>
+              </form>
+            )}
+          </main>
+
+          {/* 公開前プレビュー確認モーダル */}
+          {showPreviewModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h3 className="font-extrabold text-slate-900 text-lg">公開内容の最終確認</h3>
+                  <button onClick={() => setShowPreviewModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <Icon name="x" size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-sm bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <span className="text-xs text-slate-400 font-bold block">依頼内容</span>
+                    <span className="font-extrabold text-base text-slate-900">{task}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-xs text-slate-400 font-bold block">日時</span>
+                      <span className="font-bold">{date.replace(/-/g, "/")} {time}〜</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-400 font-bold block">募集人数</span>
+                      <span className="font-bold">{capacity}名（{policy}）</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-400 font-bold block">活動場所</span>
+                    <span className="font-bold">{location}</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-2">
+                    <span className="text-xs text-amber-700 font-bold block">依頼者連絡先（非公開）</span>
+                    <span className="font-bold">{repName} 様 / {repPhone}</span>
+                  </div>
+                  {notes && (
+                    <div className="border-t border-slate-200 pt-2">
+                      <span className="text-xs text-slate-400 font-bold block">備考</span>
+                      <p className="text-xs whitespace-pre-wrap text-slate-700">{notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPreviewModal(false)}
+                    className="flex-1 py-3 bg-slate-100 text-slate-800 font-bold text-sm rounded-xl hover:bg-slate-200 border border-slate-300"
+                  >
+                    修正する
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleSubmitRequest}
+                    className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-1.5"
+                  >
+                    <Icon name="send" size={16} />
+                    <span>{isSubmitting ? "登録中..." : "確定して掲示板に公開"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* トースト通知 */}
+          {toast.show && (
+            <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-slate-900 text-white text-xs py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-between gap-2 border border-slate-800 font-bold">
+              <span>{toast.message}</span>
+              <button onClick={() => setToast({ show: false, message: "", type: "info" })} className="text-slate-400 hover:text-white">
+                <Icon name="x" size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<RequestFormApp />);
+  </script>
+</body>
+</html>
